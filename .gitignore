@@ -1,0 +1,7 @@
+node_modules/
+# Generado por "npm run build" (SSG)
+public/temporada/
+# Fotos subidas en desarrollo
+public/uploads/
+.env
+*.log
