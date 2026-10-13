@@ -2,33 +2,35 @@ import express from 'express';
 import compression from 'compression';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cors, serverTiming, usuarioActual, manejadorErrores } from './http/middlewares.js';
-import { rutasApi, rutasPaginas } from './http/rutas.js';
-import { CacheIsr } from './render/CacheIsr.js';
+import { cors, serverTiming, currentUser, errorHandler } from './http/middlewares.js';
+import { apiRoutes, pageRoutes } from './http/routes.js';
+import { IsrCache } from './render/IsrCache.js';
 
-const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-export function crearApp(contenedor, {
+export function createApp(container, {
   frontendUrl = 'http://localhost:5173',
-  origenesPermitidos = [frontendUrl],
-  revalidarSegundos = 60,
+  allowedOrigins = [frontendUrl],
+  revalidateSeconds = 60,
+  uploadsDir = path.join(root, 'public', 'uploads'),
 } = {}) {
   const app = express();
   app.disable('x-powered-by');
 
   app.use(serverTiming);
-  app.use(compression()); // gzip: reduce el consumo de datos de JSON y HTML
-  app.use(cors(origenesPermitidos));
-  app.use(usuarioActual);
+  app.use(compression()); // gzip: reduces the data used by JSON and HTML
+  app.use(cors(allowedOrigins));
+  app.use(currentUser(container.authService));
   app.use(express.json({ limit: '256kb' }));
 
-  // Archivos estáticos: páginas SSG (generadas en build) y fotos subidas
-  app.use(express.static(path.join(raiz, 'public'), { maxAge: '1h' }));
+  // Static files: uploaded photos and SSG pages (generated at build time)
+  app.use('/uploads', express.static(uploadsDir, { maxAge: '1h' }));
+  app.use(express.static(path.join(root, 'public'), { maxAge: '1h' }));
 
-  app.use('/api', rutasApi(contenedor, { dirUploads: path.join(raiz, 'public', 'uploads') }));
-  app.use(rutasPaginas(contenedor, { cacheIsr: new CacheIsr({ revalidarSegundos }), frontendUrl }));
+  app.use('/api', apiRoutes(container, { uploadsDir }));
+  app.use(pageRoutes(container, { isrCache: new IsrCache({ revalidateSeconds }), frontendUrl }));
 
   app.use((_req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
-  app.use(manejadorErrores);
+  app.use(errorHandler);
   return app;
 }

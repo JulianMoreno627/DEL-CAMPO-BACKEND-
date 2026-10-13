@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "description": "Backend del Caso de Estudio 3: Plataforma de comercialización directa campesino-consumidor (Avance 1)",
   "type": "module",
-  "main": "src/servidor.js",
+  "main": "src/server.js",
   "scripts": {
     "build": "node scripts/build-ssg.js",
     "prestart": "npm run build",
-    "start": "node src/servidor.js",
-    "dev": "node --watch src/servidor.js",
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
     "test": "node --test \"test/**/*.test.js\""
   },
   "engines": {
