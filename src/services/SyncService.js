@@ -9,10 +9,11 @@ import { DomainError } from '../domain/errors.js';
 export class SyncService {
   static MAX_OPERATIONS = 200;
 
-  constructor({ harvestService, harvestRepo }) {
+  constructor({ harvestService, harvestRepo, syncStore = null }) {
     this.harvestService = harvestService;
     this.harvestRepo = harvestRepo;
     this.processed = new Map(); // opId -> result (in production: sync_operation table)
+    this.syncStore = syncStore; // optional { save(opId, result) }
   }
 
   async applyBatch({ deviceId, producerId, operations }) {
@@ -29,6 +30,7 @@ export class SyncService {
       const result = await this.#apply(op, producerId);
       result.deviceId = deviceId;
       this.processed.set(op.opId, result);
+      this.syncStore?.save(op.opId, result).catch(() => {});
       results.push(result);
     }
     return { serverAt: new Date().toISOString(), results };
