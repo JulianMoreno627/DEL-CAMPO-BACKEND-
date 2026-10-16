@@ -44,9 +44,9 @@ export class AuthService {
     const user = createUser({ role, name, phone, town, village, farm, type });
     const credential = await hashPassword(password);
     if (this.credentials.has(email)) throw new DomainError('Ya existe una cuenta con ese correo', 409);
+    await this.userRepo.save(user); // Save user FIRST (Postgres foreign key)
     this.credentials.set(email, { userId: user.id, ...credential });
     this.onChange?.();
-    await this.userRepo.save(user);
     return this.#session(user);
   }
 
