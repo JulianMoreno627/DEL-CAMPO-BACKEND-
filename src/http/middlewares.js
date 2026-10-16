@@ -23,7 +23,8 @@ export function serverTiming(req, res, next) {
 export function cors(allowedOrigins) {
   return (req, res, next) => {
     const origin = req.headers.origin;
-    if (origin && allowedOrigins.includes(origin)) {
+    // Si la petición viene de un origen, lo permitimos dinámicamente
+    if (origin) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
       res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
