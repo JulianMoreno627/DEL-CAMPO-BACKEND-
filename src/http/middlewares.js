@@ -21,12 +21,13 @@ export function serverTiming(req, res, next) {
 
 /** CORS: the frontend lives on another origin (another repository / another port). */
 export function cors(allowedOrigins) {
+  const allowed = new Set(allowedOrigins.map((o) => o.replace(/\/$/, '')));
   return (req, res, next) => {
     const origin = req.headers.origin;
-    // Si la petición viene de un origen, lo permitimos dinámicamente
-    if (origin) {
+    res.setHeader('Vary', 'Origin');
+    // Only origins in the allowlist (ALLOWED_ORIGINS) get CORS headers
+    if (origin && allowed.has(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Vary', 'Origin');
       res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Device-Id');
       res.setHeader('Access-Control-Expose-Headers', 'Server-Timing,ETag');
