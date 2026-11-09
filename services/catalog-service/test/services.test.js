@@ -117,6 +117,13 @@ test('photos: invalid images are rejected first, the owner is checked before wri
   }
 });
 
+test('no default products: the store starts empty and only shows what producers publish', async () => {
+  const c = await createTestContainer({ withDemoData: false });
+  assert.deepEqual(await c.listingService.list(), []);
+  await c.listingService.publish('p-rosa', { product: 'Cubios', price: 3500, quantity: 10 });
+  assert.deepEqual((await c.listingService.list()).map((l) => l.product), ['Cubios']);
+});
+
 test('season groups the catalog by availability month', async () => {
   const c = await createTestContainer();
   const months = await c.catalogService.season();

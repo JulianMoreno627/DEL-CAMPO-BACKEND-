@@ -15,13 +15,14 @@ import { demoUsers, DEMO_PASSWORD } from './seed.js';
  * @param {string} options.tokenSecret secret shared with the gateway (TOKEN_SECRET)
  * @param {string|null} [options.databaseUrl] Neon (pooled); without it, in-memory repositories
  * @param {boolean} [options.withSeed] creates the demo accounts if there are no users
+ * @param {object} [options.repositories] { userRepo, credentialRepo } already created (tests: simulates a restart over the same storage)
  */
-export async function createContainer({ tokenSecret, databaseUrl = null, withSeed = true }) {
+export async function createContainer({ tokenSecret, databaseUrl = null, withSeed = true, repositories = {} }) {
   const pool = databaseUrl ? createPool(databaseUrl) : null;
   if (pool) await waitForDatabase(pool);
 
-  const userRepo = pool ? new PostgresUserRepository({ pool }) : new InMemoryUserRepository();
-  const credentialRepo = pool ? new PostgresCredentialRepository({ pool }) : new InMemoryCredentialRepository();
+  const userRepo = repositories.userRepo ?? (pool ? new PostgresUserRepository({ pool }) : new InMemoryUserRepository());
+  const credentialRepo = repositories.credentialRepo ?? (pool ? new PostgresCredentialRepository({ pool }) : new InMemoryCredentialRepository());
 
   const authService = new AuthService({ userRepo, credentialRepo, sessionToken: new SessionToken(tokenSecret) });
   const userService = new UserService({ userRepo });
