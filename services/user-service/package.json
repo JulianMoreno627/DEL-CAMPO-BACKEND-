@@ -1,0 +1,15 @@
+{
+  "name": "@del-campo/user-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Microservicio de usuarios: registro, inicio de sesión (token HMAC, scrypt) y perfiles de productor y comprador",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "dependencies": {
+    "@del-campo/shared": "*"
+  }
+}
