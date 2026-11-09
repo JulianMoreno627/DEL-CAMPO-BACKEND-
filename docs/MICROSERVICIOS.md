@@ -123,8 +123,7 @@ catalog-service publica cada cambio de cosecha de su `EventBus` (patrón Observe
 
 - Hoy catalog-service guarda las fotos en disco (`UPLOADS_DIR`) y el gateway las sirve en `/uploads`. **En Render Free el disco es efímero: las fotos se pierden en cada deploy.** No se cambió.
 - **Propuesta:** una tabla `photo` (`id`, `content_type`, `data BYTEA`, `created_at`) cuyo dueño sea catalog-service, más un RPC `GetPhoto` que el gateway expone en `/uploads/:id` con `Cache-Control` largo.
-  - Las fotos ya llegan comprimidas por el Web Worker del cliente (WebP de ~800 px, unos 30–80 KB), así que el almacenamiento gratuito de Neon alcanza para miles de fotos.
-  - Antes de decidir, conviene revisar el límite actual del plan en la consola de Neon.
+  - Las fotos ya llegan comprimidas por el Web Worker del cliente (WebP de ~800 px, unos 30–80 KB). El plan gratuito de Neon incluye **1 GB de almacenamiento** (dato de la consola de Neon al crear el proyecto), así que alcanza para más de 10.000 fotos, descontando lo que ocupan las demás tablas.
   - Alternativa: un almacenamiento de objetos con plan gratuito, consultado por REST desde catalog-service.
 
 ## 9. Otras limitaciones conocidas
