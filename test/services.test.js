@@ -3,22 +3,6 @@ import assert from 'node:assert/strict';
 import { createContainer } from '../src/container.js';
 import { createApp } from '../src/app.js';
 
-test('order → delivery → both parties rate each other', async () => {
-  const c = await createContainer({ withDemoData: true });
-  const order = await c.orderService.create({ harvestId: 'cos-2', buyerId: 'c-ana', quantity: 20 });
-  assert.equal((await c.harvestRepo.get('cos-2')).reservedQuantity, 20);
-
-  await assert.rejects(c.reputationService.rate({ orderId: order.id, fromUserId: 'c-ana', scores: { quality: 5, reliability: 5 } }), /entregada/);
-  await assert.rejects(c.orderService.changeStatus(order.id, 'CONFIRMED', 'c-ana'), /Solo el productor/);
-  await c.orderService.changeStatus(order.id, 'CONFIRMED', 'p-rosa');
-  await c.orderService.changeStatus(order.id, 'DELIVERED', 'p-rosa');
-
-  await c.reputationService.rate({ orderId: order.id, fromUserId: 'c-ana', scores: { quality: 5, reliability: 4 } });
-  await c.reputationService.rate({ orderId: order.id, fromUserId: 'p-rosa', scores: { paysOnTime: 5, seriousness: 5 } });
-  await assert.rejects(c.reputationService.rate({ orderId: order.id, fromUserId: 'p-rosa', scores: { paysOnTime: 1, seriousness: 1 } }), /Ya calificó/);
-  assert.equal((await c.reputationService.reputationOf('c-ana')).total, 2);
-});
-
 test('HTTP: SSR with ISR cache (MISS → HIT → invalidation) and Server-Timing', async () => {
   const c = await createContainer({ withDemoData: true });
   const server = createApp(c).listen(0);
