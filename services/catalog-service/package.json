@@ -10,6 +10,7 @@
     "test": "node --test \"test/**/*.test.js\""
   },
   "dependencies": {
-    "@del-campo/shared": "*"
+    "@del-campo/shared": "*",
+    "@grpc/grpc-js": "^1.14.6"
   }
 }

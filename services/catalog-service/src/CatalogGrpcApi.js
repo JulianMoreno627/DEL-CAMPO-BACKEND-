@@ -1,3 +1,4 @@
+import grpc from '@grpc/grpc-js';
 import { unary, currentContext } from '@del-campo/shared';
 import {
   publishFromMessage, editFromMessage, harvestDataFromMessage, changesFromMessage,
@@ -47,6 +48,7 @@ export function registerCatalogGrpcApi(server, controller) {
 
     // ---- Server-side stream: every harvest change, while the subscriber stays connected
     watchHarvestChanges: (call) => {
+      call.sendMetadata(new grpc.Metadata()); // confirms the subscription to the client right away
       const unsubscribe = controller.subscribeToHarvestChanges((change) => call.write(change));
       call.on('cancelled', unsubscribe);
       call.on('close', unsubscribe);
