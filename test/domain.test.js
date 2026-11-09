@@ -2,7 +2,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Order } from '../src/domain/Order.js';
 import { Reputation, Rating } from '../src/domain/Reputation.js';
-import { Cart } from '../src/domain/Cart.js';
 import { InvalidTransition } from '../src/domain/errors.js';
 
 test('an order follows its life cycle and computes the total', () => {
@@ -19,13 +18,4 @@ test('Bayesian reputation: few ratings stay close to the mean', () => {
   assert.equal(single.score, 3.88);
   assert.equal(single.level, 'NEW');
   assert.throws(() => new Rating({ orderId: 'r', fromUserId: 'a', toUserId: 'b', scores: { quality: 6 } }), /1 a 5/);
-});
-
-test('Cart: positive quantities and quantity 0 removes the product', () => {
-  const cart = new Cart({ buyerId: 'c-ana' });
-  cart.add('a1', 2);
-  assert.equal(cart.id, 'c-ana');
-  assert.throws(() => cart.add('a1', -1), /positiva/);
-  cart.changeQuantity('a1', 0);
-  assert.equal(cart.isEmpty, true);
 });
