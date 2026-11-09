@@ -1,15 +1,20 @@
 {
-  "name": "plataforma-campesino-backend",
-  "version": "0.1.0",
-  "description": "Backend del Caso de Estudio 3: Plataforma de comercialización directa campesino-consumidor (Avance 1)",
+  "name": "del-campo-backend",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Backend del Caso de Estudio 3: Plataforma de comercialización directa campesino-consumidor (monorepo de microservicios gRPC)",
   "type": "module",
   "main": "src/server.js",
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
   "scripts": {
     "build": "node scripts/build-ssg.js",
     "prestart": "npm run build",
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test \"test/**/*.test.js\""
+    "test": "node --test \"test/**/*.test.js\" \"packages/*/test/**/*.test.js\" \"services/*/test/**/*.test.js\""
   },
   "engines": {
     "node": ">=20"
