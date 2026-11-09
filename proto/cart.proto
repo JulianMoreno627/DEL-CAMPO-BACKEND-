@@ -1,0 +1,57 @@
+// cart-service: the buyer's shopping cart. Owns the table cart.
+// The buyer comes from the call metadata (x-user-id) in the RPCs used by the app;
+// the internal RPCs used by the checkout saga receive buyer_id explicitly.
+syntax = "proto3";
+
+package delcampo.cart;
+
+import "common.proto";
+
+service CartService {
+  rpc GetCart(delcampo.common.Empty) returns (CartView);
+  rpc AddItem(CartItemRequest) returns (CartView);
+  // quantity 0 removes the product.
+  rpc ChangeItemQuantity(CartItemRequest) returns (CartView);
+  rpc RemoveItem(CartItemRequest) returns (CartView);
+  rpc ClearCart(delcampo.common.Empty) returns (CartView);
+
+  // ---- Internal (checkout saga in order-service)
+  rpc GetCartItems(BuyerRef) returns (CartItems);
+  rpc EmptyCart(BuyerRef) returns (delcampo.common.Empty);
+}
+
+message CartItemRequest {
+  string listing_id = 1;
+  optional double quantity = 2;
+}
+
+message CartLine {
+  string listing_id = 1;
+  double quantity = 2;
+  bool found = 3;                 // false: the listing no longer exists
+  string product = 4;
+  optional string photo = 5;
+  string unit = 6;
+  double price = 7;
+  double subtotal = 8;
+  double available_quantity = 9;
+  bool available = 10;
+}
+
+message CartView {
+  repeated CartLine items = 1;
+  double total = 2;
+}
+
+message BuyerRef {
+  string buyer_id = 1;
+}
+
+message CartItem {
+  string listing_id = 1;
+  double quantity = 2;
+}
+
+message CartItems {
+  repeated CartItem items = 1;
+}

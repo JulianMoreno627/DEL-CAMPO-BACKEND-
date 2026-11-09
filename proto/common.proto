@@ -1,0 +1,19 @@
+// Messages shared by several contracts. They carry data only, never business rules.
+syntax = "proto3";
+
+package delcampo.common;
+
+message Empty {}
+
+message Coordinate {
+  double lat = 1;
+  double lng = 2;
+}
+
+message Ids {
+  repeated string ids = 1;
+}
+
+message StringList {
+  repeated string values = 1;
+}

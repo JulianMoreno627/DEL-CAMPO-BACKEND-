@@ -1,0 +1,84 @@
+// user-service: accounts (sign-up, login, session token) and user profiles.
+// Owns the tables app_user and credential.
+syntax = "proto3";
+
+package delcampo.user;
+
+import "common.proto";
+
+service UserService {
+  // Creates the account and returns a started session.
+  rpc Register(RegisterRequest) returns (Session);
+  // Validates the credentials and the chosen profile (PRODUCER or BUYER).
+  rpc Login(LoginRequest) returns (Session);
+  rpc GetUser(UserId) returns (User);
+  // Missing ids are skipped (no error): used to enrich lists.
+  rpc GetUsersByIds(delcampo.common.Ids) returns (UserList);
+  rpc ListProducers(delcampo.common.Empty) returns (UserList);
+  rpc NearbyProducers(NearbyRequest) returns (NearbyProducerList);
+}
+
+message User {
+  string id = 1;
+  int32 version = 2;
+  string updated_at = 3;
+  string role = 4;                       // PRODUCER | BUYER
+  string name = 5;
+  string phone = 6;
+  delcampo.common.Coordinate location = 7; // not set = no known location
+  // Producer only
+  optional string farm = 8;
+  optional string village = 9;
+  optional string town = 10;
+  repeated string crops = 11;
+  // Buyer only: CONSUMER | STORE | RESTAURANT
+  optional string type = 12;
+  // Criteria (1-5) other users rate this user with (polymorphism of Producer / Buyer)
+  repeated string rating_criteria = 13;
+}
+
+message UserId {
+  string id = 1;
+}
+
+message UserList {
+  repeated User users = 1;
+}
+
+message RegisterRequest {
+  string role = 1;
+  optional string name = 2;
+  optional string email = 3;
+  optional string password = 4;
+  optional string phone = 5;
+  optional string town = 6;
+  optional string village = 7;
+  optional string farm = 8;
+  optional string type = 9;
+}
+
+message LoginRequest {
+  optional string email = 1;
+  optional string password = 2;
+  optional string role = 3;
+}
+
+message Session {
+  string token = 1;
+  User user = 2;
+}
+
+message NearbyRequest {
+  double lat = 1;
+  double lng = 2;
+  optional double radius_km = 3;
+}
+
+message NearbyProducer {
+  User producer = 1;
+  double distance_km = 2;
+}
+
+message NearbyProducerList {
+  repeated NearbyProducer producers = 1;
+}
