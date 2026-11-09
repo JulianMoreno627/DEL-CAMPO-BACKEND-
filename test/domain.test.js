@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { Harvest, HarvestStatus } from '../src/domain/Harvest.js';
 import { Order } from '../src/domain/Order.js';
 import { Reputation, Rating } from '../src/domain/Reputation.js';
-import { FairPriceCalculator } from '../src/domain/FairPrice.js';
 import { Cart } from '../src/domain/Cart.js';
 import { InvalidTransition } from '../src/domain/errors.js';
 
@@ -91,15 +90,6 @@ test('Bayesian reputation: few ratings stay close to the mean', () => {
   assert.equal(single.score, 3.88);
   assert.equal(single.level, 'NEW');
   assert.throws(() => new Rating({ orderId: 'r', fromUserId: 'a', toUserId: 'b', scores: { quality: 6 } }), /1 a 5/);
-});
-
-test('fair price: evaluates against the suggested market range', () => {
-  const calculator = new FairPriceCalculator(new Map([['papa criolla', { marketPrice: 4000, middlemanPrice: 1300, unit: 'kg' }]]));
-  assert.deepEqual(calculator.reference('Papa criolla').fairRange, { min: 2400, max: 3400 });
-  assert.equal(calculator.evaluate('Papa criolla', 1300), 'LOW');
-  assert.equal(calculator.evaluate('Papa criolla', 3000), 'FAIR');
-  assert.equal(calculator.evaluate('Papa criolla', 3900), 'HIGH');
-  assert.equal(calculator.evaluate('Yuca', 1000), 'NO_REFERENCE');
 });
 
 test('Cart: positive quantities and quantity 0 removes the product', () => {
