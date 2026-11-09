@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 /**
  * Configuration read from environment variables. No secret has a default value here:
  * they only come from the environment (Render) or from a local .env that is never uploaded.
@@ -28,3 +30,10 @@ export const grpcDeadlineMs = () => Number(process.env.GRPC_DEADLINE_MS ?? 5000)
 
 /** Neon connection string (pooled). Without it the services use in-memory repositories. */
 export const databaseUrl = () => process.env.DATABASE_URL || null;
+
+/**
+ * Folder of the listing photos. catalog-service writes them and the gateway serves them at /uploads,
+ * so both must read the same folder (they run on the same machine). Default: <repo>/data/uploads (ignored by git).
+ */
+export const uploadsDir = () => process.env.UPLOADS_DIR
+  ?? fileURLToPath(new URL('../../../data/uploads/', import.meta.url));

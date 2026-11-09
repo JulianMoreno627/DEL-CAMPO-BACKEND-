@@ -7,7 +7,7 @@ export { Entity } from './model/Entity.js';
 export { Repository, InMemoryRepository } from './repository/Repository.js';
 export { PostgresRepository } from './repository/PostgresRepository.js';
 export { createPool, parseDatabaseUrl, waitForDatabase, runSqlFile } from './db/postgres.js';
-export { SERVICES, grpcPort, grpcAddress, grpcDeadlineMs, databaseUrl } from './config.js';
+export { SERVICES, grpcPort, grpcAddress, grpcDeadlineMs, databaseUrl, uploadsDir } from './config.js';
 export { runWithContext, currentContext } from './context.js';
 export { loadContract, PROTO_DIR } from './grpc/protoLoader.js';
 export { GrpcServer, unary, contextFromCall } from './grpc/GrpcServer.js';
