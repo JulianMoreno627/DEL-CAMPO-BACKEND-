@@ -4,6 +4,25 @@ Esta guía copia **los datos actuales** (cuentas, anuncios, carritos, pedidos y 
 
 > Hazlo con la base de Neon **vacía**. Si el backend ya arrancó contra Neon, ya creó las tablas y las cuentas demo, y la restauración chocaría con esas filas. En ese caso, usa la opción `--clean --if-exists` del paso 4.
 
+## Opción rápida: script en Node (sin instalar nada)
+
+`scripts/migrate-to-neon.js` hace lo mismo que los pasos 3–5 de esta guía usando el driver `pg` del proyecto:
+
+1. Crea el esquema en Neon.
+2. Se niega a copiar si Neon ya tiene datos, salvo que se use `--force`.
+3. Copia las tablas en orden y dentro de una transacción (todo o nada).
+4. Compara los conteos de filas al final.
+
+En PowerShell:
+
+```powershell
+$env:SOURCE_DATABASE_URL = "<External Database URL de Render>"
+$env:TARGET_DATABASE_URL = "<cadena de Neon SIN pooling>"
+node scripts/migrate-to-neon.js
+```
+
+Solo **lee** la base de Render. Si prefieres las herramientas oficiales de PostgreSQL, sigue los pasos de abajo.
+
 ## 1. Requisitos
 
 - **Herramientas de cliente de PostgreSQL** (`pg_dump` y `pg_restore`) en una versión **igual o mayor** que la del servidor de Render.
