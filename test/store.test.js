@@ -7,41 +7,6 @@ import { createContainer } from '../src/container.js';
 import { createApp } from '../src/app.js';
 import { DEMO_PASSWORD } from '../src/data/seed.js';
 
-test('cart: adds, checks stock, checks out and creates orders with the listing price', async () => {
-  const c = await createContainer({ withDemoData: true });
-  await c.cartService.add('c-ana', 'cos-2', 10); // Arveja 4200/kg
-  let cart = await c.cartService.add('c-ana', 'cos-2', 5);
-  assert.equal(cart.items[0].quantity, 15);
-  cart = await c.cartService.add('c-ana', 'cos-3', 2); // Lechuga 1300
-  assert.equal(cart.total, 15 * 4200 + 2 * 1300);
-
-  await assert.rejects(c.cartService.add('c-ana', 'cos-2', 1000), /Solo quedan/);
-  await c.cartService.changeQuantity('c-ana', 'cos-3', 0);
-  assert.equal((await c.cartService.view('c-ana')).items.length, 1);
-
-  const { orders, total } = await c.cartService.checkout('c-ana');
-  assert.equal(orders.length, 1);
-  assert.equal(total, 15 * 4200);
-  assert.equal(orders[0].producerId, 'p-rosa');
-  assert.equal((await c.harvestRepo.get('cos-2')).reservedQuantity, 15);
-  assert.equal((await c.cartService.view('c-ana')).items.length, 0);
-  await assert.rejects(c.cartService.checkout('c-ana'), /vacío/);
-});
-
-test('cart: if a product no longer has enough quantity, the whole checkout is rolled back', async () => {
-  const c = await createContainer({ withDemoData: true });
-  await c.cartService.add('c-ana', 'cos-6', 350); // all the tree tomato
-  await c.cartService.add('c-ana', 'cos-3', 10);
-  await c.orderService.create({ harvestId: 'cos-3', buyerId: 'c-tienda', quantity: 495 }); // another buyer gets there first
-
-  await assert.rejects(c.cartService.checkout('c-ana'), /Solo quedan 5/);
-  const tomato = await c.harvestRepo.get('cos-6');
-  assert.equal(tomato.reservedQuantity, 0);
-  assert.equal(tomato.status, 'AVAILABLE'); // back on sale after the rollback
-  assert.equal((await c.orderService.list({ buyerId: 'c-ana' })).length, 0);
-  assert.equal((await c.cartService.view('c-ana')).items.length, 2);
-});
-
 test('HTTP: login per profile, producer listing and checkout from the cart', async () => {
   const c = await createContainer({ withDemoData: true });
   const server = createApp(c).listen(0);

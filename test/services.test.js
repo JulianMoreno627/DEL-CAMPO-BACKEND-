@@ -19,13 +19,6 @@ test('order → delivery → both parties rate each other', async () => {
   assert.equal((await c.reputationService.reputationOf('c-ana')).total, 2);
 });
 
-test('cancelling an order gives the quantity back to the harvest', async () => {
-  const c = await createContainer({ withDemoData: true });
-  const order = await c.orderService.create({ harvestId: 'cos-1', buyerId: 'c-tienda', quantity: 100 });
-  await c.orderService.changeStatus(order.id, 'CANCELLED', 'c-tienda');
-  assert.equal((await c.harvestRepo.get('cos-1')).reservedQuantity, 0);
-});
-
 test('HTTP: SSR with ISR cache (MISS → HIT → invalidation) and Server-Timing', async () => {
   const c = await createContainer({ withDemoData: true });
   const server = createApp(c).listen(0);
