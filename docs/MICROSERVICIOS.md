@@ -42,10 +42,11 @@ Se midió en desarrollo (Windows, Node 24), leyendo `/api/health`:
 | `--max-old-space-size=64 --max-semi-space-size=1` (por defecto) | ~54 MB al arrancar, ~58 MB tras uso |
 | Además `--lite-mode` | ~49 MB (JIT más lento) |
 
-Total con los flags por defecto: 6 × ~58 MB + el gateway (~80 MB), unos **430 MB**.
+Total en Windows con los flags por defecto: 6 × ~58 MB + el gateway (~80 MB), unos **430 MB**.
 
-- Entra en 512 MB, pero con poco margen. En Linux (Render) Node suele ocupar algo menos.
-- Hay que confirmarlo en producción con `/api/health` y la pestaña **Metrics** de Render.
+**En producción (Render, Linux), medido con `/api/health` el 9 de noviembre de 2026:** cada microservicio marca entre 71 y 77 MB de RSS y el gateway 84 MB. Sumado da unos 520 MB, pero esa suma **sobreestima** el uso real: el RSS de cada proceso incluye las bibliotecas compartidas de Node, que el sistema carga una sola vez. La cifra que cuenta para el límite es la del contenedor, en la pestaña **Metrics** de Render.
+
+- El margen es poco. Hay que vigilar **Metrics** y los reinicios (`restarts` en `/api/health`).
 - Si se acerca al límite, se agrega `--lite-mode` a `SERVICE_NODE_FLAGS`.
 - `--max-old-space-size` también limita cada heap, para que un servicio con fugas no se lleve la memoria de los demás.
 
