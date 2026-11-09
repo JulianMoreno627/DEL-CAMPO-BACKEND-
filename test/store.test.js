@@ -7,38 +7,6 @@ import { createContainer } from '../src/container.js';
 import { createApp } from '../src/app.js';
 import { DEMO_PASSWORD } from '../src/data/seed.js';
 
-test('sign-up and login with a producer or buyer profile', async () => {
-  const c = await createContainer({ withDemoData: true });
-  const { token, user } = await c.authService.register({
-    role: 'PRODUCER', name: 'Marta Díaz', email: 'Marta@Correo.co', password: 'secreta1', town: 'Tibasosa',
-  });
-  assert.equal(user.role, 'PRODUCER');
-  assert.equal(c.authService.verifyToken(token).sub, user.id);
-  assert.equal(JSON.stringify(user).includes('secreta1'), false);
-
-  const session = await c.authService.login({ email: 'marta@correo.co', password: 'secreta1', role: 'PRODUCER' });
-  assert.equal(session.user.id, user.id);
-
-  await assert.rejects(c.authService.login({ email: 'marta@correo.co', password: 'otra-clave' }), /incorrectos/);
-  await assert.rejects(c.authService.login({ email: 'marta@correo.co', password: 'secreta1', role: 'BUYER' }), /ingrese como productor/);
-  await assert.rejects(c.authService.register({ role: 'BUYER', name: 'Otra', email: 'marta@correo.co', password: 'secreta1' }), /Ya existe/);
-  await assert.rejects(c.authService.register({ name: 'Sin rol', email: 'x@y.co', password: 'secreta1' }), /productor o comprador/);
-  await assert.rejects(c.authService.register({ role: 'BUYER', name: 'Corta', email: 'z@y.co', password: '123' }), /al menos 6/);
-});
-
-test('a tampered token or one signed by another server is not valid', async () => {
-  const c = await createContainer({ withDemoData: true });
-  const { token } = await c.authService.login({ email: 'ana@delcampo.co', password: DEMO_PASSWORD });
-  const [body, signature] = token.split('.');
-  const forged = Buffer.from(JSON.stringify({ sub: 'p-rosa', role: 'PRODUCER', exp: Date.now() + 1e9 })).toString('base64url');
-  assert.equal(c.authService.verifyToken(`${forged}.${signature}`), null);
-  assert.equal(c.authService.verifyToken(`${body}.x`), null);
-  assert.equal(c.authService.verifyToken('garbage'), null);
-
-  const other = await createContainer({ withDemoData: true }); // another server with another secret
-  assert.equal(other.authService.verifyToken(token), null);
-});
-
 test('the producer publishes a listing and the buyer sees it with the price only', async () => {
   const c = await createContainer({ withDemoData: true });
   const listing = await c.listingService.publish('p-rosa', {

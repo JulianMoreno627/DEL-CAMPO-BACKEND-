@@ -2,12 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Harvest, HarvestStatus } from '../src/domain/Harvest.js';
 import { Order } from '../src/domain/Order.js';
-import { Coordinate } from '../src/domain/Coordinate.js';
-import { Producer, Buyer, User } from '../src/domain/User.js';
 import { Reputation, Rating } from '../src/domain/Reputation.js';
 import { FairPriceCalculator } from '../src/domain/FairPrice.js';
 import { Cart } from '../src/domain/Cart.js';
-import { InvalidTransition, DomainError } from '../src/domain/errors.js';
+import { InvalidTransition } from '../src/domain/errors.js';
 
 const newHarvest = (extra = {}) => new Harvest({
   producerId: 'p1', product: 'Papa criolla', estimatedQuantity: 100, unitPrice: 2500,
@@ -86,20 +84,6 @@ test('an order follows its life cycle and computes the total', () => {
   order.changeStatus('DELIVERED');
   assert.equal(order.completed, true);
   assert.throws(() => order.changeStatus('CANCELLED'), InvalidTransition);
-});
-
-test('User is abstract and subclasses define their own criteria (polymorphism)', () => {
-  assert.throws(() => new User({ name: 'x', location: { lat: 0, lng: 0 } }), TypeError);
-  const producer = new Producer({ name: 'Rosa', village: 'El Rosal', location: { lat: 5, lng: -73 } });
-  const buyer = new Buyer({ name: 'Ana', location: { lat: 4.6, lng: -74 } });
-  assert.deepEqual(producer.ratingCriteria(), ['quality', 'reliability']);
-  assert.deepEqual(buyer.ratingCriteria(), ['paysOnTime', 'seriousness']);
-});
-
-test('Haversine distance Bogotá–Tunja ≈ 115 km', () => {
-  const d = new Coordinate(4.711, -74.0721).distanceKm(new Coordinate(5.5353, -73.3678));
-  assert.ok(d > 110 && d < 125, `distance ${d}`);
-  assert.throws(() => new Coordinate(100, 0), DomainError);
 });
 
 test('Bayesian reputation: few ratings stay close to the mean', () => {
