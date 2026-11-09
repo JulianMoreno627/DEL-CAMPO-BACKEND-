@@ -1,0 +1,15 @@
+{
+  "name": "@del-campo/reputation-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Microservicio de reputación bidireccional: calificaciones entre compradores y productores",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "dependencies": {
+    "@del-campo/shared": "*"
+  }
+}

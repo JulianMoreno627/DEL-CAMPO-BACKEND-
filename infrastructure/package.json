@@ -1,0 +1,18 @@
+{
+  "name": "@del-campo/infrastructure",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Orquestador de los microservicios, API Gateway REST, rendering SSR/SSG/ISR y métricas",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "build": "node scripts/build-ssg.js",
+    "start": "node src/server.js",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "dependencies": {
+    "@del-campo/shared": "*",
+    "compression": "^1.8.0",
+    "express": "^4.21.2"
+  }
+}

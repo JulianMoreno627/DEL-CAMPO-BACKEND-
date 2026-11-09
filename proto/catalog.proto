@@ -1,0 +1,274 @@
+// catalog-service: harvests and listings (a producer's listing is stored as a harvest),
+// seasonal catalog with proximity, listing photos and offline synchronization.
+// Owns the tables harvest and sync_operation.
+// The acting user (owner checks) comes from the call metadata (x-user-id, x-user-role).
+syntax = "proto3";
+
+package delcampo.catalog;
+
+import "common.proto";
+import "user.proto";
+import "pricing.proto";
+import "reputation.proto";
+
+service CatalogService {
+  // ---- Listings (simple view used by the app)
+  rpc ListListings(ListListingsRequest) returns (ListingList);
+  rpc GetListing(HarvestId) returns (Listing);
+  rpc ListMyListings(delcampo.common.Empty) returns (ListingList);
+  rpc PublishListing(PublishListingRequest) returns (Listing);
+  rpc EditListing(EditListingRequest) returns (Listing);
+  // Only while the listing has no orders (asks order-service).
+  rpc DeleteListing(HarvestId) returns (delcampo.common.Empty);
+  rpc UploadListingPhoto(PhotoUpload) returns (Listing);
+
+  // ---- Harvests (full model)
+  rpc CreateHarvest(HarvestData) returns (Harvest);
+  rpc UpdateHarvest(UpdateHarvestRequest) returns (HarvestUpdate);
+  rpc UploadHarvestPhoto(PhotoUpload) returns (Harvest);
+
+  // ---- Read queries
+  rpc GetCatalog(CatalogFilter) returns (CatalogItemList);
+  rpc GetSeason(delcampo.common.Empty) returns (SeasonList);
+  rpc GetProducerProfile(ProducerRef) returns (ProducerProfile);
+  // Missing ids are skipped (no error): used by cart and order to enrich their data.
+  rpc GetHarvestsByIds(delcampo.common.Ids) returns (HarvestList);
+
+  // ---- Reservations (called by order-service, also to compensate the checkout saga)
+  rpc ReserveHarvest(Reservation) returns (Harvest);
+  rpc ReleaseHarvest(Reservation) returns (Harvest);
+
+  // ---- Offline synchronization (idempotent by opId)
+  rpc ApplySyncBatch(SyncBatch) returns (SyncBatchResult);
+
+  // ---- Server-side stream: one message every time a harvest changes (invalidates the ISR cache)
+  rpc WatchHarvestChanges(delcampo.common.Empty) returns (stream HarvestChange);
+}
+
+message Harvest {
+  string id = 1;
+  int32 version = 2;
+  string updated_at = 3;
+  string producer_id = 4;
+  string product = 5;
+  string category = 6;
+  string unit = 7;
+  double estimated_quantity = 8;
+  double reserved_quantity = 9;
+  double free_quantity = 10;
+  double unit_price = 11;
+  optional string planted_on = 12;
+  string available_on = 13;
+  string description = 14;
+  optional string photo = 15;
+  string status = 16;               // PLANTED | GROWING | AVAILABLE | SOLD_OUT
+  map<string, string> field_timestamps = 17;
+  // Business rule computed by catalog-service (not stored): other services must not duplicate it.
+  bool accepts_reservations = 18;
+}
+
+message HarvestId {
+  string id = 1;
+}
+
+message HarvestList {
+  repeated Harvest harvests = 1;
+}
+
+// Data to create a harvest (all optional: the domain validates them).
+message HarvestData {
+  optional string id = 1;
+  optional string product = 2;
+  optional string category = 3;
+  optional string unit = 4;
+  optional double estimated_quantity = 5;
+  optional double unit_price = 6;
+  optional string planted_on = 7;
+  optional string available_on = 8;
+  optional string description = 9;
+  optional string photo = 10;
+  optional string status = 11;
+}
+
+// Partial changes: only the fields that are set are applied.
+message HarvestChanges {
+  optional string product = 1;
+  optional double estimated_quantity = 2;
+  optional double unit_price = 3;
+  optional string available_on = 4;
+  optional string description = 5;
+  optional string photo = 6;
+  optional string status = 7;
+}
+
+message UpdateHarvestRequest {
+  string id = 1;
+  HarvestChanges changes = 2;
+  optional string timestamp = 3;  // when the user made the change (may have been offline)
+}
+
+message HarvestUpdate {
+  Harvest harvest = 1;
+  repeated string applied = 2;
+  repeated string conflicts = 3;
+}
+
+message PhotoUpload {
+  string id = 1;
+  bytes content = 2;              // already compressed by the client's Web Worker (max. 600 KB)
+  string content_type = 3;        // image/webp | image/jpeg | image/png
+}
+
+// ---- Listings
+
+message ListingProducer {
+  string id = 1;
+  string name = 2;
+  string town = 3;
+}
+
+message Listing {
+  string id = 1;
+  string product = 2;
+  string description = 3;
+  optional string photo = 4;
+  double price = 5;
+  string unit = 6;
+  double available_quantity = 7;
+  string available_on = 8;
+  string published_at = 9;
+  ListingProducer producer = 10;  // not set in the producer's own list
+  // Only in the producer's own list (ListMyListings)
+  optional string status = 11;
+  optional double sold_quantity = 12;
+}
+
+message ListingList {
+  repeated Listing listings = 1;
+}
+
+message ListListingsRequest {
+  optional string search = 1;
+}
+
+message PublishListingRequest {
+  optional string product = 1;
+  optional string description = 2;
+  optional double price = 3;
+  optional double quantity = 4;
+  optional string unit = 5;
+  optional string category = 6;
+  optional string available_on = 7;
+}
+
+message EditListingRequest {
+  string id = 1;
+  optional string product = 2;
+  optional string description = 3;
+  optional double price = 4;
+  optional double quantity = 5;
+  optional string available_on = 6;
+}
+
+// ---- Catalog
+
+message CatalogFilter {
+  optional double lat = 1;
+  optional double lng = 2;
+  optional double radius_km = 3;
+  optional string category = 4;
+  optional string status = 5;
+  optional double max_days = 6;
+}
+
+message CatalogProducer {
+  string id = 1;
+  string name = 2;
+  string farm = 3;
+  string village = 4;
+  string town = 5;
+  delcampo.common.Coordinate location = 6;
+}
+
+message CatalogItem {
+  Harvest harvest = 1;
+  CatalogProducer producer = 2;   // not set if the producer no longer exists
+  optional double distance_km = 3;
+  delcampo.pricing.PriceEvaluation price = 4;
+}
+
+message CatalogItemList {
+  repeated CatalogItem items = 1;
+}
+
+message SeasonMonth {
+  string month = 1;               // YYYY-MM
+  repeated CatalogItem harvests = 2;
+}
+
+message SeasonList {
+  repeated SeasonMonth months = 1;
+}
+
+message ProducerRef {
+  string producer_id = 1;
+}
+
+message ProfileHarvest {
+  Harvest harvest = 1;
+  string price_evaluation = 2;
+}
+
+message ProducerProfile {
+  delcampo.user.User producer = 1;
+  repeated ProfileHarvest harvests = 2;
+  delcampo.reputation.Reputation reputation = 3;
+}
+
+// ---- Reservations
+
+message Reservation {
+  string harvest_id = 1;
+  optional double quantity = 2;
+}
+
+// ---- Offline synchronization
+
+message SyncOperation {
+  optional string op_id = 1;
+  optional string type = 2;       // CREATE_HARVEST | UPDATE_HARVEST
+  optional string entity_id = 3;
+  optional string timestamp = 4;
+  HarvestData data = 5;
+}
+
+message SyncBatch {
+  optional string device_id = 1;
+  repeated SyncOperation operations = 2;
+  bool operations_is_list = 3;    // false when the client did not send an array (it is rejected)
+}
+
+message SyncResult {
+  optional string op_id = 1;
+  optional string type = 2;
+  optional string entity_id = 3;
+  string status = 4;              // APPLIED | PARTIAL | REJECTED
+  delcampo.common.StringList applied = 5;
+  delcampo.common.StringList conflicts = 6;
+  Harvest entity = 7;             // not set = null
+  optional string message = 8;
+  optional string device_id = 9;
+  bool repeated = 10;
+}
+
+message SyncBatchResult {
+  string server_at = 1;
+  repeated SyncResult results = 2;
+}
+
+// ---- Stream
+
+message HarvestChange {
+  string harvest_id = 1;
+  string producer_id = 2;
+}

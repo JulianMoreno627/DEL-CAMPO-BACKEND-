@@ -1,0 +1,33 @@
+# Render Blueprint: UN solo Web Service gratis (sin base de datos de Render: la base es Neon).
+# El proceso de infrastructure arranca los 6 microservicios como procesos hijos y solo él
+# escucha en PORT. Ver docs/MICROSERVICIOS.md (por qué) y docs/DESPLIEGUE.md (pasos).
+#
+# Nota: si el servicio ya existe y se creó desde el panel, Render NO lee este archivo;
+# los mismos valores se configuran a mano en Settings (Build Command / Start Command).
+services:
+  - type: web
+    name: del-campo-backend
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Secretos: se escriben en el panel de Render, nunca en el repositorio
+      - key: DATABASE_URL
+        sync: false
+      - key: TOKEN_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: DB_POOL_MAX
+        value: "3"
+      - key: GRPC_DEADLINE_MS
+        value: "5000"
+      - key: SERVICE_NODE_FLAGS
+        value: "--max-old-space-size=64 --max-semi-space-size=1"

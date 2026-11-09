@@ -1,0 +1,15 @@
+{
+  "name": "@del-campo/cart-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Microservicio del carrito de compras del comprador",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "dependencies": {
+    "@del-campo/shared": "*"
+  }
+}

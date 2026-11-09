@@ -1,0 +1,47 @@
+// pricing-service: fair price (Strategy pattern) against market reference prices.
+// Owns the table market_price. It is the ONLY service that talks to a third-party API, and it does it over REST.
+syntax = "proto3";
+
+package delcampo.pricing;
+
+service PricingService {
+  // NOT_FOUND when there is no reference price for the product.
+  rpc GetReference(ProductRequest) returns (PriceReference);
+  // Batch evaluation (one call for a whole catalog instead of one per product).
+  rpc EvaluatePrices(EvaluateRequest) returns (EvaluateReply);
+}
+
+message ProductRequest {
+  string product = 1;
+}
+
+message FairRange {
+  double min = 1;
+  double max = 2;
+}
+
+message PriceReference {
+  string product = 1;
+  double market_price = 2;
+  double middleman_price = 3;
+  string unit = 4;
+  FairRange fair_range = 5;
+}
+
+message PriceQuery {
+  string product = 1;
+  double price = 2;
+}
+
+message EvaluateRequest {
+  repeated PriceQuery items = 1;
+}
+
+message PriceEvaluation {
+  string evaluation = 1;          // LOW | FAIR | HIGH | NO_REFERENCE
+  PriceReference reference = 2;   // not set when there is no reference
+}
+
+message EvaluateReply {
+  repeated PriceEvaluation items = 1; // same order as the request
+}

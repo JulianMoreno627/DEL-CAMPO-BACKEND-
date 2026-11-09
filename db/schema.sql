@@ -1,9 +1,23 @@
--- PostgreSQL schema for Del Campo backend.
--- Uses plain lat/lng (DOUBLE PRECISION) instead of PostGIS so it runs on any
--- Postgres instance (including Render's free tier). Distance is computed in JS
--- (Haversine) in PostgresUserRepository.nearbyProducers.
+-- PostgreSQL schema of the Del Campo backend (one Neon database shared by the microservices).
+--
+-- It is idempotent (IF NOT EXISTS): infrastructure runs it ONCE at startup, before starting
+-- the services, so 6 processes never run DDL at the same time and the foreign keys between
+-- tables of different owners are created in the right order.
+--
+-- Every table has ONE owner service; no other service reads or writes it (they use gRPC):
+--   user-service        app_user, credential
+--   catalog-service     harvest, sync_operation
+--   cart-service        cart
+--   order-service       purchase_order
+--   reputation-service  rating
+--   pricing-service     market_price
+-- The foreign keys between owners (e.g. harvest.producer_id -> app_user) are kept because it is a
+-- single database for a demo; with one database per service they would be removed.
+--
+-- Plain lat/lng (DOUBLE PRECISION) instead of PostGIS, so it runs on any PostgreSQL;
+-- the distance is computed in JS (Haversine).
 
--- "user" is a reserved word in PostgreSQL, hence app_user
+-- Owner: user-service. "user" is a reserved word in PostgreSQL, hence app_user
 CREATE TABLE IF NOT EXISTS app_user (
   id          TEXT PRIMARY KEY,
   role        TEXT NOT NULL CHECK (role IN ('PRODUCER', 'BUYER')),
@@ -24,7 +38,7 @@ CREATE TABLE IF NOT EXISTS app_user (
 );
 CREATE INDEX IF NOT EXISTS app_user_role_idx ON app_user (role);
 
--- Credentials apart from the profile: the hash never travels with the user data
+-- Owner: user-service. Credentials apart from the profile: the hash never travels with the user data
 CREATE TABLE IF NOT EXISTS credential (
   email    TEXT PRIMARY KEY,
   user_id  TEXT NOT NULL UNIQUE REFERENCES app_user(id) ON DELETE CASCADE,
@@ -32,7 +46,7 @@ CREATE TABLE IF NOT EXISTS credential (
   hash     BYTEA NOT NULL
 );
 
--- A producer's listing is stored as a harvest
+-- Owner: catalog-service. A producer's listing is stored as a harvest
 CREATE TABLE IF NOT EXISTS harvest (
   id                  TEXT PRIMARY KEY,
   producer_id         TEXT NOT NULL REFERENCES app_user(id),
@@ -55,7 +69,7 @@ CREATE TABLE IF NOT EXISTS harvest (
 CREATE INDEX IF NOT EXISTS harvest_catalog_ix ON harvest (status, available_on);
 CREATE INDEX IF NOT EXISTS harvest_producer_ix ON harvest (producer_id);
 
--- "order" is a reserved word in PostgreSQL, hence purchase_order
+-- Owner: order-service. "order" is a reserved word in PostgreSQL, hence purchase_order
 CREATE TABLE IF NOT EXISTS purchase_order (
   id          TEXT PRIMARY KEY,
   harvest_id  TEXT NOT NULL REFERENCES harvest(id),
@@ -70,7 +84,7 @@ CREATE TABLE IF NOT EXISTS purchase_order (
 CREATE INDEX IF NOT EXISTS purchase_order_buyer_ix ON purchase_order (buyer_id);
 CREATE INDEX IF NOT EXISTS purchase_order_producer_ix ON purchase_order (producer_id);
 
--- Shopping cart: one row per buyer; items stored as JSONB
+-- Owner: cart-service. Shopping cart: one row per buyer; items stored as JSONB
 CREATE TABLE IF NOT EXISTS cart (
   buyer_id    TEXT PRIMARY KEY REFERENCES app_user(id) ON DELETE CASCADE,
   items       JSONB NOT NULL DEFAULT '[]',
@@ -78,6 +92,7 @@ CREATE TABLE IF NOT EXISTS cart (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Owner: reputation-service
 CREATE TABLE IF NOT EXISTS rating (
   id            TEXT PRIMARY KEY,
   order_id      TEXT NOT NULL REFERENCES purchase_order(id),
@@ -91,7 +106,7 @@ CREATE TABLE IF NOT EXISTS rating (
 );
 CREATE INDEX IF NOT EXISTS rating_to_user_ix ON rating (to_user_id);
 
--- Idempotency of the offline synchronization
+-- Owner: catalog-service. Idempotency of the offline synchronization
 CREATE TABLE IF NOT EXISTS sync_operation (
   op_id         TEXT PRIMARY KEY,
   device_id     TEXT,
@@ -99,12 +114,12 @@ CREATE TABLE IF NOT EXISTS sync_operation (
   processed_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Market prices (reference for fair-price evaluation)
+-- Owner: pricing-service. Market prices (reference for fair-price evaluation; source = where they came from)
 CREATE TABLE IF NOT EXISTS market_price (
   product          TEXT PRIMARY KEY,
   market_price     NUMERIC(12,2) NOT NULL,
   middleman_price  NUMERIC(12,2) NOT NULL,
   unit             TEXT NOT NULL,
-  source           TEXT DEFAULT 'SIPSA-DANE',
+  source           TEXT DEFAULT 'DESCONOCIDA', -- the services always write where the price came from
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );

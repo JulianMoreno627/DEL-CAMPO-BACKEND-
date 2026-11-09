@@ -1,0 +1,15 @@
+{
+  "name": "@del-campo/pricing-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Microservicio de precios: precio justo (patrón Strategy) contra precios de mercado obtenidos por REST",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "dependencies": {
+    "@del-campo/shared": "*"
+  }
+}

@@ -1,0 +1,76 @@
+// order-service: batch orders with the price frozen when ordering, their life cycle
+// and the checkout saga (cart → reservations in catalog → orders, with compensation).
+// Owns the table purchase_order. The acting user comes from the call metadata (x-user-id, x-user-role).
+syntax = "proto3";
+
+package delcampo.order;
+
+import "common.proto";
+
+service OrderService {
+  // Checkout saga: all or nothing.
+  rpc CheckoutCart(delcampo.common.Empty) returns (CheckoutResult);
+  rpc CreateOrder(CreateOrderRequest) returns (Order);
+  // The acting user's orders: received (producer) or placed (buyer).
+  rpc ListOrders(delcampo.common.Empty) returns (OrderDetailList);
+  rpc ChangeOrderStatus(ChangeStatusRequest) returns (Order);
+
+  // ---- Internal (reputation-service, catalog-service)
+  rpc GetOrder(OrderId) returns (Order);
+  rpc HasOrdersForHarvest(HarvestRef) returns (HasOrdersReply);
+}
+
+message Order {
+  string id = 1;
+  int32 version = 2;
+  string updated_at = 3;
+  string harvest_id = 4;
+  string producer_id = 5;
+  string buyer_id = 6;
+  double quantity = 7;
+  double unit_price = 8;
+  double total = 9;
+  string status = 10;             // PENDING | CONFIRMED | DELIVERED | CANCELLED
+  // Business rule computed by order-service: only a completed order can be rated.
+  bool completed = 11;
+}
+
+message OrderId {
+  string id = 1;
+}
+
+message CreateOrderRequest {
+  optional string harvest_id = 1;
+  optional double quantity = 2;
+}
+
+message ChangeStatusRequest {
+  string id = 1;
+  optional string status = 2;
+}
+
+message CheckoutResult {
+  repeated Order orders = 1;
+  double total = 2;
+}
+
+message OrderDetail {
+  Order order = 1;
+  optional string product = 2;
+  optional string unit = 3;
+  optional string available_on = 4;
+  optional string producer_name = 5;
+  optional string buyer_name = 6;
+}
+
+message OrderDetailList {
+  repeated OrderDetail orders = 1;
+}
+
+message HarvestRef {
+  string harvest_id = 1;
+}
+
+message HasOrdersReply {
+  bool has_orders = 1;
+}

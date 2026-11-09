@@ -1,0 +1,45 @@
+// reputation-service: two-way ratings (buyers rate producers and vice versa).
+// Owns the table rating. The user who rates comes from the call metadata (x-user-id).
+syntax = "proto3";
+
+package delcampo.reputation;
+
+service ReputationService {
+  rpc Rate(RateRequest) returns (Rating);
+  rpc GetReputation(UserRef) returns (Reputation);
+}
+
+message RateRequest {
+  string order_id = 1;
+  map<string, double> scores = 2;
+  optional string comment = 3;
+}
+
+message Rating {
+  string id = 1;
+  int32 version = 2;
+  string updated_at = 3;
+  string order_id = 4;
+  string from_user_id = 5;
+  string to_user_id = 6;
+  map<string, double> scores = 7;
+  string comment = 8;
+}
+
+message UserRef {
+  string user_id = 1;
+}
+
+message RecentRating {
+  map<string, double> scores = 1;
+  string comment = 2;
+  string date = 3;
+}
+
+message Reputation {
+  int32 total = 1;
+  double score = 2;
+  string level = 3;               // NEW | TRUSTED | REGULAR | AT_RISK
+  map<string, double> by_criterion = 4;
+  repeated RecentRating recent = 5;
+}
