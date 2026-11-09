@@ -12,8 +12,9 @@
   "scripts": {
     "build": "node infrastructure/scripts/build-ssg.js",
     "start": "node infrastructure/src/server.js",
-    "dev": "node --watch-path=infrastructure/src --watch-path=services --watch-path=packages/shared/src --watch-path=proto infrastructure/src/server.js",
-    "test": "node --test \"test/**/*.test.js\" \"packages/*/test/**/*.test.js\" \"services/*/test/**/*.test.js\" \"infrastructure/test/**/*.test.js\""
+    "dev": "node --env-file-if-exists=.env --watch-path=infrastructure/src --watch-path=services --watch-path=packages/shared/src --watch-path=proto infrastructure/src/server.js",
+    "test": "node --test \"test/**/*.test.js\" \"packages/*/test/**/*.test.js\" \"services/*/test/**/*.test.js\" \"infrastructure/test/**/*.test.js\"",
+    "test:db": "node --env-file-if-exists=.env.test --test test/integration/postgres.test.js"
   },
   "engines": {
     "node": ">=20"
