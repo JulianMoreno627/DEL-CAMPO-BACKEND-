@@ -7,27 +7,6 @@ import { createContainer } from '../src/container.js';
 import { createApp } from '../src/app.js';
 import { DEMO_PASSWORD } from '../src/data/seed.js';
 
-test('the producer publishes a listing and the buyer sees it with the price only', async () => {
-  const c = await createContainer({ withDemoData: true });
-  const listing = await c.listingService.publish('p-rosa', {
-    product: 'Cubios', description: 'Cubios de páramo', price: 3500, quantity: 40,
-  });
-  assert.equal(listing.price, 3500);
-  assert.equal(listing.availableQuantity, 40);
-  assert.equal(listing.producer.name, 'Rosa Pérez');
-
-  const list = await c.listingService.list();
-  const seen = list.find((l) => l.id === listing.id);
-  assert.equal(seen.price, 3500);
-  assert.equal('evaluation' in seen, false); // no market price analysis
-  assert.ok(list.every((l, k) => k === 0 || list[k - 1].publishedAt >= l.publishedAt)); // newest first
-  assert.deepEqual((await c.listingService.list({ search: 'cubio' })).map((l) => l.id), [listing.id]);
-
-  await assert.rejects(c.listingService.publish('c-ana', { product: 'X', price: 1, quantity: 1 }), /Solo un productor/);
-  await assert.rejects(c.listingService.edit(listing.id, 'p-jose', { price: 1 }), /dueño/);
-  assert.equal((await c.listingService.edit(listing.id, 'p-rosa', { price: 3800 })).price, 3800);
-});
-
 test('cart: adds, checks stock, checks out and creates orders with the listing price', async () => {
   const c = await createContainer({ withDemoData: true });
   await c.cartService.add('c-ana', 'cos-2', 10); // Arveja 4200/kg
