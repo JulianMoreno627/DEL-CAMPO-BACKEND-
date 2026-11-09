@@ -13,6 +13,7 @@ export function toOrderDto(order) {
     unitPrice: o.unitPrice,
     total: o.total,
     status: o.status,
+    completed: order.completed,
   };
 }
 

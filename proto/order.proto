@@ -31,6 +31,8 @@ message Order {
   double unit_price = 8;
   double total = 9;
   string status = 10;             // PENDING | CONFIRMED | DELIVERED | CANCELLED
+  // Business rule computed by order-service: only a completed order can be rated.
+  bool completed = 11;
 }
 
 message OrderId {

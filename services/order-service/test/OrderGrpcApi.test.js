@@ -49,6 +49,7 @@ test('OrderGrpcApi: status changes, GetOrder and errors with their HTTP status',
     (error) => error.status === 422 && error.name === 'InvalidTransition');
   const confirmed = await runWithContext({ userId: 'p-rosa' }, () => client.call('ChangeOrderStatus', { id: order.id, status: 'CONFIRMED' }));
   assert.equal(confirmed.status, 'CONFIRMED');
+  assert.equal(confirmed.completed, false);
   assert.equal((await client.call('GetOrder', { id: order.id })).status, 'CONFIRMED');
   await assert.rejects(client.call('GetOrder', { id: 'nope' }), (error) => error.status === 404 && error.message === 'Reserva no encontrado');
 });
