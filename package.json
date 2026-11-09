@@ -4,17 +4,16 @@
   "private": true,
   "description": "Backend del Caso de Estudio 3: Plataforma de comercialización directa campesino-consumidor (monorepo de microservicios gRPC)",
   "type": "module",
-  "main": "src/server.js",
   "workspaces": [
     "packages/*",
-    "services/*"
+    "services/*",
+    "infrastructure"
   ],
   "scripts": {
-    "build": "node scripts/build-ssg.js",
-    "prestart": "npm run build",
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
-    "test": "node --test \"test/**/*.test.js\" \"packages/*/test/**/*.test.js\" \"services/*/test/**/*.test.js\""
+    "build": "node infrastructure/scripts/build-ssg.js",
+    "start": "node infrastructure/src/server.js",
+    "dev": "node --watch-path=infrastructure/src --watch-path=services --watch-path=packages/shared/src --watch-path=proto infrastructure/src/server.js",
+    "test": "node --test \"test/**/*.test.js\" \"packages/*/test/**/*.test.js\" \"services/*/test/**/*.test.js\" \"infrastructure/test/**/*.test.js\""
   },
   "engines": {
     "node": ">=20"
