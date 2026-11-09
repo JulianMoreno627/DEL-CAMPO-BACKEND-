@@ -4,6 +4,7 @@
  * that was not set arrives as null. compact() removes the undefined fields so that a partial
  * change only touches what the client really sent.
  */
+import { Harvest } from '../model/Harvest.js';
 
 const compact = (object) => Object.fromEntries(Object.entries(object).filter(([, value]) => value !== undefined));
 
@@ -11,8 +12,10 @@ const compact = (object) => Object.fromEntries(Object.entries(object).filter(([,
 
 /** Accepts a Harvest or its JSON (the sync results are stored as JSON). */
 export function toHarvestDto(harvest) {
-  const h = typeof harvest.toJSON === 'function' ? harvest.toJSON() : harvest;
+  const entity = harvest instanceof Harvest ? harvest : new Harvest(harvest);
+  const h = entity.toJSON();
   return {
+    acceptsReservations: entity.acceptsReservations(),
     id: h.id,
     version: h.version,
     updatedAt: h.updatedAt,

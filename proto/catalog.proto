@@ -63,6 +63,8 @@ message Harvest {
   optional string photo = 15;
   string status = 16;               // PLANTED | GROWING | AVAILABLE | SOLD_OUT
   map<string, string> field_timestamps = 17;
+  // Business rule computed by catalog-service (not stored): other services must not duplicate it.
+  bool accepts_reservations = 18;
 }
 
 message HarvestId {

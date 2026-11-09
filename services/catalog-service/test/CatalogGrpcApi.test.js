@@ -60,6 +60,12 @@ test('CatalogGrpcApi: catalog items, harvest updates and photos as bytes', async
   const { items } = await client.call('GetCatalog', { lat: 4.6486, lng: -74.0628, radiusKm: 40 });
   assert.ok(items.length > 0 && items.every((i) => i.distanceKm <= 40));
   assert.equal(items[0].price.evaluation, 'NO_REFERENCE');
+  assert.equal(items[0].harvest.acceptsReservations, true);
+  const { harvests: [soldOut] } = await client.call('GetHarvestsByIds', { ids: ['cos-4'] });
+  assert.equal(soldOut.acceptsReservations, true);
+  await client.call('ReserveHarvest', { harvestId: 'cos-4', quantity: 400 });
+  const { harvests: [full] } = await client.call('GetHarvestsByIds', { ids: ['cos-4'] });
+  assert.equal(full.acceptsReservations, false); // the rule is computed by catalog-service
 
   const { harvest, applied } = await as('p-luis', 'PRODUCER', () =>
     client.call('UpdateHarvest', { id: 'cos-7', changes: { description: 'Fresa de Chía' } }));
