@@ -10,6 +10,7 @@ import { CatalogController } from './controllers/CatalogController.js';
 import { HarvestController } from './controllers/HarvestController.js';
 import { SystemController } from './controllers/SystemController.js';
 import { PhotoController } from './controllers/PhotoController.js';
+import { AssistantController } from './controllers/AssistantController.js';
 
 /**
  * API Gateway: the only HTTP entry point (public PORT). Frontend → gateway is REST;
@@ -50,6 +51,7 @@ export function createGateway({
     catalog: new CatalogController(clients),
     harvest: new HarvestController(clients),
     system: new SystemController({ healthProbe, metricsService }),
+    assistant: new AssistantController(clients),
   };
   app.use('/api', apiRoutes(controllers));
   app.use(pageRoutes({ catalog: clients.catalog, isrCache, frontendUrl }));
