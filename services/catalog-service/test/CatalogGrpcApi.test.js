@@ -75,6 +75,12 @@ test('CatalogGrpcApi: catalog items, harvest updates and photos as bytes', async
   const photo = await as('p-luis', 'PRODUCER', () =>
     client.call('UploadHarvestPhoto', { id: 'cos-7', content: Buffer.from('RIFF....WEBP'), contentType: 'image/webp' }));
   assert.match(photo.photo, /\.webp$/);
+
+  // GetPhoto returns the same bytes and type (the gateway serves them at /uploads/<file>)
+  const stored = await client.call('GetPhoto', { fileName: photo.photo.replace('/uploads/', '') });
+  assert.equal(stored.contentType, 'image/webp');
+  assert.equal(Buffer.from(stored.content).toString(), 'RIFF....WEBP');
+  await assert.rejects(client.call('GetPhoto', { fileName: 'nope.webp' }), (error) => error.status === 404);
 });
 
 test('CatalogGrpcApi: sync batch keeps the shape of each result (applied only on updates)', async () => {

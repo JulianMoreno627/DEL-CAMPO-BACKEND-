@@ -58,6 +58,11 @@ export class CatalogController {
     return toHarvestDto(await this.harvestService.uploadPhoto(id, producerId, photo));
   }
 
+  async getPhoto(fileName) {
+    const { content, contentType } = await this.harvestService.getPhoto(fileName);
+    return { content, contentType };
+  }
+
   async reserveHarvest(id, quantity) {
     return toHarvestDto(await this.harvestService.reserve(id, quantity));
   }
