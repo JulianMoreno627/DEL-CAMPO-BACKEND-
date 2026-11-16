@@ -16,3 +16,17 @@ export const toReferenceDto = (reference) => (reference
 export const toEvaluationDto = ({ evaluation, reference }) => ({ evaluation, reference: toReferenceDto(reference) });
 
 export const evaluateFromMessage = ({ items }) => items.map(({ product, price }) => ({ product, price }));
+
+export const listingPhotoFromMessage = ({ content, contentType }) => ({ content, contentType });
+
+export const toListingSuggestionDto = ({ suggestion, reference }) => ({
+  recognized: suggestion.recognized,
+  product: suggestion.product,
+  category: suggestion.category,
+  unit: suggestion.unit,
+  description: suggestion.description,
+  confidence: suggestion.confidence,
+  photoTip: suggestion.photoTip,
+  reference: toReferenceDto(reference),
+  provider: suggestion.provider,
+});

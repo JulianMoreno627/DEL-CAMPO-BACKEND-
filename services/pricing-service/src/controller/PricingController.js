@@ -1,9 +1,10 @@
-import { toReferenceDto, toEvaluationDto } from '../dto/pricingDto.js';
+import { toReferenceDto, toEvaluationDto, toListingSuggestionDto } from '../dto/pricingDto.js';
 
-/** Receives DTOs, calls the service and returns DTOs (no gRPC details). */
+/** Receives DTOs, calls the services and returns DTOs (no gRPC details). */
 export class PricingController {
-  constructor({ pricingService }) {
+  constructor({ pricingService, listingAssistant }) {
     this.pricingService = pricingService;
+    this.listingAssistant = listingAssistant;
   }
 
   async getReference(product) {
@@ -12,5 +13,9 @@ export class PricingController {
 
   async evaluatePrices(items) {
     return (await this.pricingService.evaluate(items)).map(toEvaluationDto);
+  }
+
+  async suggestListing(userId, photo) {
+    return toListingSuggestionDto(await this.listingAssistant.suggest(userId, photo));
   }
 }

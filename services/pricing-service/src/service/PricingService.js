@@ -68,6 +68,21 @@ export class PricingService {
   }
 
   /**
+   * Reference of the product whose name best matches a free name (e.g. the one the AI suggests):
+   * "Zanahoria con hoja" → zanahoria, "Tomate de arbol" → tomate de árbol. Accents and case are ignored;
+   * the longest known name contained in it wins. null if none matches.
+   */
+  async closestReference(name) {
+    await this.#ensureLoaded();
+    const wanted = normalize(name);
+    if (!wanted) return null;
+    const match = [...this.calculator.marketPrices.keys()]
+      .filter((known) => wanted.includes(normalize(known)) || normalize(known).includes(wanted))
+      .sort((a, b) => b.length - a.length)[0];
+    return match ? this.calculator.reference(match) : null;
+  }
+
+  /**
    * @param {{product: string, price: number}[]} items
    * @returns {Promise<{evaluation: string, reference: object|null}[]>} same order as items
    */
@@ -79,3 +94,7 @@ export class PricingService {
     }));
   }
 }
+
+/** Lower case, no accents, single spaces: to compare product names written in different ways. */
+const normalize = (text) => String(text ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '')
+  .toLowerCase().replace(/\s+/g, ' ').trim();
