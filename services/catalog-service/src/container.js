@@ -3,7 +3,7 @@ import { EventBus } from './model/EventBus.js';
 import { Harvest } from './model/Harvest.js';
 import { InMemoryHarvestRepository, PostgresHarvestRepository } from './repository/HarvestRepository.js';
 import { InMemorySyncOperationRepository, PostgresSyncOperationRepository } from './repository/SyncOperationRepository.js';
-import { PhotoStorage } from './repository/PhotoStorage.js';
+import { PostgresPhotoStorage, DiskPhotoStorage } from './repository/PhotoStorage.js';
 import { UserClient } from './clients/UserClient.js';
 import { PricingClient } from './clients/PricingClient.js';
 import { ReputationClient } from './clients/ReputationClient.js';
@@ -19,7 +19,7 @@ import { CatalogController } from './controller/CatalogController.js';
  *
  * @param {object} [options]
  * @param {string|null} [options.databaseUrl]
- * @param {string} [options.photosDir]
+ * @param {string} [options.photosDir] folder of the photos when there is no database (development and tests)
  * @param {object} [options.clients] { userClient, pricingClient, reputationClient, orderClient } (tests inject fakes)
  * @param {object[]} [options.harvests] initial harvests (tests)
  */
@@ -43,7 +43,8 @@ export async function createContainer({ databaseUrl = null, photosDir = uploadsD
   const orderClient = clients.orderClient ?? new OrderClient(remote('order'));
 
   const bus = new EventBus();
-  const photoStorage = new PhotoStorage({ directory: photosDir });
+  // With a database the photos live in Neon (the disk of Render Free is erased on every restart)
+  const photoStorage = pool ? new PostgresPhotoStorage({ pool }) : new DiskPhotoStorage({ directory: photosDir });
   const harvestService = new HarvestService({ harvestRepo, userClient, photoStorage, bus });
   const listingService = new ListingService({ harvestRepo, harvestService, userClient, orderClient, bus });
   const catalogService = new CatalogService({ harvestRepo, userClient, pricingClient, reputationClient });
