@@ -39,7 +39,6 @@ before(async () => {
     metricsService: new MetricsService(),
     frontendUrl: 'http://localhost:5173',
     allowedOrigins: ['http://localhost:5173'],
-    uploadsDir: photosDir,
     publicDir: PUBLIC_DIR,
     healthProbe: async () => ({ services: { catalog: 'SERVING' }, database: 'IN_MEMORY' }),
   });
@@ -150,7 +149,16 @@ test('HTTP: photo upload travels to catalog-service as bytes and is served at /u
   const { photo } = await uploaded.json();
   const served = await fetch(base + photo);
   assert.equal(served.status, 200);
+  assert.equal(served.headers.get('content-type'), 'image/webp');
+  assert.match(served.headers.get('cache-control'), /max-age=31536000, immutable/);
+  assert.match(served.headers.get('server-timing'), /catalog\.GetPhoto;dur=/); // it came from catalog-service over gRPC
   assert.deepEqual(Buffer.from(await served.arrayBuffer()), image);
+
+  // Replacing the photo deletes the old one
+  const replaced = await fetch(`${base}/api/listings/cos-2/photo`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'image/png' }, body: Buffer.from('png') });
+  assert.equal(replaced.status, 201);
+  assert.equal((await fetch(base + photo)).status, 404);
+  assert.equal((await fetch(`${base}/uploads/../../package.json`)).status, 404);
 });
 
 test('HTTP: offline sync batch and metrics', async () => {
