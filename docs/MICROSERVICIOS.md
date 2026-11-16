@@ -57,7 +57,7 @@ Total con los flags por defecto: 6 × ~58 MB + el gateway (~80 MB), unos **430 M
   | Servicio | Tablas |
   |---|---|
   | user-service | `app_user`, `credential` |
-  | catalog-service | `harvest`, `sync_operation` |
+  | catalog-service | `harvest`, `sync_operation`, `photo` |
   | cart-service | `cart` |
   | order-service | `purchase_order` |
   | reputation-service | `rating` |
@@ -119,12 +119,21 @@ catalog-service publica cada cambio de cosecha de su `EventBus` (patrón Observe
 - Mientras no haya una fuente REST, se usan los precios guardados en `market_price`. La primera vez se cargan los valores ilustrativos que ya tenía el proyecto, con `source = 'DEMO'`, para que nadie los confunda con datos oficiales.
 - Si la fuente externa falla, también se usan los últimos precios guardados.
 
-## 8. Fotos (pendiente de decisión)
+## 8. Fotos guardadas en Neon
 
-- Hoy catalog-service guarda las fotos en disco (`UPLOADS_DIR`) y el gateway las sirve en `/uploads`. **En Render Free el disco es efímero: las fotos se pierden en cada deploy.** No se cambió.
-- **Propuesta:** una tabla `photo` (`id`, `content_type`, `data BYTEA`, `created_at`) cuyo dueño sea catalog-service, más un RPC `GetPhoto` que el gateway expone en `/uploads/:id` con `Cache-Control` largo.
-  - Las fotos ya llegan comprimidas por el Web Worker del cliente (WebP de ~800 px, unos 30–80 KB). El plan gratuito de Neon incluye **1 GB de almacenamiento** (dato de la consola de Neon al crear el proyecto), así que alcanza para más de 10.000 fotos, descontando lo que ocupan las demás tablas.
-  - Alternativa: un almacenamiento de objetos con plan gratuito, consultado por REST desde catalog-service.
+**Problema.** Al principio catalog-service guardaba las fotos en el disco del servidor. En Render Free ese disco **se borra cada vez que el servicio se reinicia**: en cada deploy y también cuando Render lo duerme tras 15 minutos sin tráfico. Las fotos desaparecían aunque los anuncios seguían en la base.
+
+**Solución.**
+- Las fotos se guardan en la tabla **`photo`** de Neon (`id`, `content_type`, `data BYTEA`, `size`, `created_at`), cuyo dueño es catalog-service.
+- La subida no cambió: el cliente envía la foto al gateway (REST) y el gateway la reenvía a catalog-service por gRPC como `bytes`.
+- Para mostrarla, el gateway atiende `/uploads/<uuid>.<ext>` llamando al RPC **`GetPhoto`** y la entrega con `Cache-Control: public, max-age=31536000, immutable`. El nombre es un uuid nuevo en cada subida, así que el contenido de una URL nunca cambia y el navegador (y el Service Worker del frontend) la guardan en caché.
+- La URL es la misma de antes, así que **el frontend no cambió**.
+- Al reemplazar la foto de un anuncio, o al borrar el anuncio, la foto anterior se elimina, para no llenar el almacenamiento.
+- Sin `DATABASE_URL` (desarrollo y pruebas), las fotos van a una carpeta (`UPLOADS_DIR`, por defecto `data/uploads`).
+
+**Capacidad.** Las fotos llegan comprimidas por el Web Worker del cliente (WebP de ~800 px, unos 30–80 KB, como máximo 600 KB). El plan gratuito de Neon incluye **1 GB de almacenamiento** (dato de la consola de Neon al crear el proyecto), así que alcanza para más de 10.000 fotos, descontando lo que ocupan las demás tablas.
+
+**Las fotos subidas antes de este cambio se perdieron** con los reinicios: hay que volver a subirlas una vez.
 
 ## 9. Otras limitaciones conocidas
 
