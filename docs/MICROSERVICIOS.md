@@ -8,7 +8,7 @@ Este documento explica **por qué** el backend quedó como está. El **qué** (e
 |---|---|---|
 | Frontend → backend | **REST** (HTTP + JSON) | `infrastructure/src/gateway/` |
 | Entre módulos internos | **solo gRPC sobre HTTP/2** (`@grpc/grpc-js`, contratos en `proto/*.proto`) | `services/*/src/*GrpcApi.js` (servidor) y `services/*/src/clients/` (clientes) |
-| Backend → API de terceros | **solo REST** | `services/pricing-service/src/clients/MarketPriceRestClient.js` (el único) |
+| Backend → API de terceros | **solo REST** | `services/pricing-service/src/clients/`: `MarketPriceRestClient.js` (precios de mercado), `GeminiRestClient.js` y `GroqRestClient.js` (IA). pricing-service es el único servicio que habla con terceros |
 
 - Ningún servicio importa código de otro servicio ni consulta tablas de otro servicio: solo usa sus clientes gRPC. Lo único compartido es `packages/shared`, que no tiene lógica de negocio.
 - Dentro de cada servicio, `<Name>GrpcApi.js` es el **único archivo que conoce gRPC**. Convierte mensaje → DTO y llama al `controller`; el controller llama al `service` y devuelve un DTO.
@@ -135,7 +135,36 @@ catalog-service publica cada cambio de cosecha de su `EventBus` (patrón Observe
 
 **Las fotos subidas antes de este cambio se perdieron** con los reinicios: hay que volver a subirlas una vez.
 
-## 9. Otras limitaciones conocidas
+## 9. Asistente de IA: "Publica con una foto"
+
+**Qué hace.** El productor toma la foto de lo que cultiva y toca **"Completar con IA"**. La IA reconoce el producto y propone el nombre, la categoría, la unidad en que se vende en Colombia y una descripción corta, honesta y en español sencillo. Además, el sistema sugiere el **precio justo** con la tabla de precios de pricing-service, y avisa si la foto está oscura o borrosa. Pensado para campesinos que escriben poco o con dificultad: publicar puede ser solo tomar una foto y revisar. **La IA solo sugiere**: el productor revisa todo y nada se publica automáticamente.
+
+**Recorrido.**
+1. El frontend envía la foto (ya comprimida a WebP) a `POST /api/assistant/listing-suggestion`, por REST y solo para productores.
+2. El gateway la reenvía a pricing-service por gRPC (`SuggestListing`), con la foto como `bytes`.
+3. `ListingAssistantService` la envía a **Gemini** por REST. Si Gemini falla, tarda demasiado o agotó su cuota gratis, la envía a **Groq**, también por REST, sin que el productor lo note.
+4. `ListingSuggestion` normaliza la respuesta: solo acepta las unidades del editor del frontend y categorías conocidas, recorta textos largos y descarta los datos si la foto no muestra un producto del campo.
+5. pricing-service busca el precio justo con una comparación tolerante de nombres ("Zanahoria con hoja" → zanahoria, sin importar tildes) y lo agrega a la respuesta.
+
+**Por qué en pricing-service y no en un servicio nuevo.**
+- pricing-service ya es el servicio que habla con terceros por REST, y la sugerencia necesita el precio justo que él mismo calcula.
+- Un proceso más ocuparía unos 70 MB, y en Render Free no se puede ver cuánta memoria queda.
+- El contrato es un RPC propio (`SuggestListing`) y la lógica está en sus propias clases (`ListingAssistantService`, `ProductRecognizer`), así que pasarlo a un servicio aparte más adelante solo implica moverlas.
+
+**Proveedores (probados el 16 de noviembre de 2026).**
+- **Gemini, principal:** modelo `gemini-flash-lite-latest`, que ese día apuntaba a `gemini-3.5-flash-lite`. Recibe un esquema JSON estricto y respondió en 1–2 s.
+- **Groq, respaldo:** modelo `qwen/qwen3.8-27b` en modo JSON, que respondió en menos de 1 s.
+- Los modelos se configuran con `GEMINI_MODEL` y `GROQ_MODEL`, porque los proveedores los retiran: `gemini-2.5-flash` ya no se ofrece a cuentas nuevas, y `gemini-flash-latest` no respondió en esa prueba.
+- Las claves solo llegan por variables de entorno (`GEMINI_API_KEY`, `GROQ_API_KEY`). Sin claves, el asistente queda desactivado y la app funciona igual.
+
+**Límites y cuidado de la cuota gratis.**
+- Cada productor puede usarlo 10 veces cada 10 minutos (si se pasa recibe `429`).
+- Cada proveedor tiene 8 s como máximo (`AI_TIMEOUT_MS`), y la llamada completa en el gateway tiene 20 s (`AI_GATEWAY_DEADLINE_MS`).
+- Los límites exactos del plan gratis de cada proveedor no están publicados de forma fija: se ven en la consola de cada uno (AI Studio y Groq).
+
+**Privacidad.** La foto se envía a Google o a Groq para analizarla. Solo se envía la foto, nunca datos del usuario.
+
+## 10. Otras limitaciones conocidas
 
 - **Arranque en frío:** Render Free duerme tras 15 minutos sin tráfico. Despertar implica arrancar 7 procesos y reactivar Neon, así que la primera respuesta puede tardar de 30 a 60 s.
 - **Métricas RUM en memoria:** viven en el gateway, igual que antes en el monolito, y se pierden al reiniciar.

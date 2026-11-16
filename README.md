@@ -13,7 +13,7 @@ El backend es un **monorepo** de 6 microservicios en Node.js con estas reglas de
 
 - **Frontend → backend:** REST. Son las mismas rutas, cuerpos, códigos y formato de error `{error, type, current}` de antes.
 - **Entre módulos:** **solo gRPC sobre HTTP/2**, con contratos en `proto/`.
-- **Hacia terceros:** **solo REST** (la API de precios de mercado).
+- **Hacia terceros:** **solo REST** (la API de precios de mercado y la IA: Gemini, con Groq de respaldo).
 
 ```mermaid
 flowchart LR
@@ -38,6 +38,7 @@ flowchart LR
   end
 
   P -- "REST" --> EXT[("API externa de<br/>precios de mercado")]
+  P -- "REST" --> AI[("IA: Gemini<br/>(respaldo: Groq)")]
   U & C & K & O & R & P -- "SQL (pooling)" --> DB[("Neon PostgreSQL<br/>1 base, tablas por dueño")]
 ```
 
@@ -52,7 +53,7 @@ En Render Free los servicios gratis no pueden recibir tráfico privado y el prox
 | **cart-service** | Carrito del comprador | 50053 | `cart` | `GetCart`, `AddItem`, `ChangeItemQuantity`, `RemoveItem`, `ClearCart`, `GetCartItems`, `EmptyCart` |
 | **order-service** | Pedidos con precio congelado, ciclo de vida y **saga del checkout** con compensación | 50054 | `purchase_order` | `CheckoutCart`, `CreateOrder`, `ListOrders`, `ChangeOrderStatus`, `GetOrder`, `HasOrdersForHarvest` |
 | **reputation-service** | Calificaciones bidireccionales (promedio bayesiano) | 50055 | `rating` | `Rate`, `GetReputation` |
-| **pricing-service** | Precio justo (patrón Strategy) y precios de mercado por **REST** | 50056 | `market_price` | `GetReference`, `EvaluatePrices` |
+| **pricing-service** | Precio justo (patrón Strategy), precios de mercado por **REST** y **asistente de IA** (Gemini / Groq por **REST**) | 50056 | `market_price` | `GetReference`, `EvaluatePrices`, `SuggestListing` |
 | **infrastructure** | Orquestador (supervisor), API Gateway REST, SSR/SSG/ISR, métricas RUM | `PORT` (público) | — | — |
 
 Todos los servicios implementan además el **Health Checking Protocol** de gRPC (`grpc.health.v1.Health`).
@@ -144,6 +145,7 @@ La sesión es un token firmado (HMAC-SHA256) que el cliente envía en `Authoriza
 | GET | `/api/producers/nearby?lat&lng&radiusKm` | user | Fincas cercanas |
 | GET | `/api/producers/:id` | catalog (+ user, pricing, reputation) | Perfil, cosechas y reputación |
 | GET | `/api/prices/:product` | pricing | Precio de mercado y rango justo sugerido |
+| POST | `/api/assistant/listing-suggestion` | pricing (→ Gemini / Groq por REST) | **IA**: foto del producto (binaria) → nombre, categoría, unidad, descripción y precio justo sugeridos (productor) |
 | POST/PATCH | `/api/harvests`, `/api/harvests/:id` | catalog | Publicar o editar una cosecha |
 | POST | `/api/sync` | catalog | Lote de operaciones offline: idempotente, con resolución de conflictos |
 | POST/GET | `/api/metrics`, `/api/metrics/summary` | infrastructure | Web Vitals de usuarios reales (p75) |

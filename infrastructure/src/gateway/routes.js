@@ -41,6 +41,9 @@ export function apiRoutes(c) {
   r.delete('/listings/:id', producer, h(c.listing.remove));
   r.post('/listings/:id/photo', producer, rawPhoto, h(c.listing.uploadPhoto));
 
+  // ---- AI listing assistant: photo → suggested listing + fair price (pricing-service → Gemini / Groq)
+  r.post('/assistant/listing-suggestion', producer, rawPhoto, h(c.assistant.suggestListing));
+
   // ---- Shopping cart (cart-service) and checkout saga (order-service)
   r.get('/cart', buyer, h(c.cart.view));
   r.post('/cart/items', buyer, h(c.cart.add));

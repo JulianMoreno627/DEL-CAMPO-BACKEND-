@@ -28,6 +28,11 @@ before(async () => {
   photosDir = await mkdtemp(path.join(tmpdir(), 'delcampo-gateway-'));
   services = await startServices(['user', 'pricing', 'reputation', 'catalog', 'cart', 'order'], {
     catalog: { harvests: demoHarvests(), photosDir },
+    // AI provider double: the gateway test must not spend the free quota of Gemini / Groq
+    pricing: { recognizers: [{
+      name: 'gemini',
+      recognize: async () => ({ recognized: true, product: 'Papa criolla', category: 'tubers', unit: 'kg', description: 'Papa criolla amarilla.', confidence: 0.9, photoTip: '' }),
+    }] },
   });
   clients = createGrpcClients();
   const isrCache = new IsrCache({ revalidateSeconds: 60 });
@@ -176,4 +181,24 @@ test('HTTP: offline sync batch and metrics', async () => {
   assert.equal(beacon.status, 204);
   const { data: summary } = await call('GET', '/api/metrics/summary');
   assert.equal(summary.find((m) => m.name === 'LCP').rating, 'GOOD');
+});
+
+test('HTTP: AI assistant — only producers; photo → suggested listing with its fair price', async () => {
+  const buyer = (await call('POST', '/api/auth/login', { body: { email: 'ana@delcampo.co', password: 'campo123' } })).data.token;
+  const producer = (await call('POST', '/api/auth/login', { body: { email: 'rosa@delcampo.co', password: 'campo123' } })).data.token;
+  const send = (token, body, type = 'image/webp') => fetch(`${base}/api/assistant/listing-suggestion`, {
+    method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': type }, body,
+  });
+
+  assert.equal((await send(buyer, Buffer.from('img'))).status, 403);
+  assert.equal((await send(producer, 'hola', 'text/plain')).status, 400);
+
+  const response = await send(producer, Buffer.from('RIFF0000WEBPVP8 fake'));
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('server-timing'), /pricing\.SuggestListing;dur=/);
+  assert.deepEqual(await response.json(), {
+    recognized: true, product: 'Papa criolla', category: 'tubers', unit: 'kg', description: 'Papa criolla amarilla.',
+    confidence: 0.9, photoTip: '', provider: 'gemini',
+    fairPrice: { product: 'papa criolla', marketPrice: 4000, unit: 'kg', min: 2400, max: 3400 },
+  });
 });

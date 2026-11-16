@@ -77,6 +77,19 @@ Agrega también en **Environment**, por claridad, aunque ya tienen esos valores 
 
 > `render.yaml` contiene esta misma configuración, pero Render solo lo lee si el servicio se crea como *Blueprint*. Como el servicio ya existe, se configura a mano.
 
+### Claves del asistente de IA ("Publica con una foto")
+
+También en **Environment**:
+
+| Variable | Valor |
+|---|---|
+| `GEMINI_API_KEY` | La clave de Google AI Studio (<https://aistudio.google.com/apikey>). |
+| `GROQ_API_KEY` | La clave de Groq (<https://console.groq.com/keys>), que sirve de respaldo. |
+
+Son secretos: solo van en el panel de Render y en un `.env` local, nunca en el repositorio. Sin ellas, la app funciona igual, pero el botón "Completar con IA" responde que el asistente no está configurado.
+
+Al arrancar, los logs de Render muestran `[pricing] asistente de IA: gemini → groq` cuando las dos claves están puestas.
+
 ## Paso 6. Publicar el código de microservicios
 
 El código está en la rama `feature/microservices`. Para desplegarlo hay que unirlo a `main` (merge), porque Render despliega `main`. **Esto se hace solo cuando lo autorices**: Render despliega automáticamente al recibir el cambio.

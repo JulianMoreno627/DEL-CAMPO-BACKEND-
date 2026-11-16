@@ -31,3 +31,8 @@ services:
         value: "5000"
       - key: SERVICE_NODE_FLAGS
         value: "--max-old-space-size=64 --max-semi-space-size=1"
+      # Asistente de IA: las claves se escriben en el panel de Render
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false

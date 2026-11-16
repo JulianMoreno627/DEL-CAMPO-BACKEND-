@@ -102,6 +102,11 @@ test('gRPC: the context (request id, user, role) travels in the metadata and the
       runWithContext({ deadline: Date.now() + 300 }, () => pricing.client.call('EvaluatePrices', { items: [] })),
       ServiceUnavailable);
     assert.ok(Date.now() - start < 1500);
+
+    // A per-call deadline shorter than the client's one is respected too
+    const quick = Date.now();
+    await assert.rejects(pricing.client.call('EvaluatePrices', { items: [] }, { deadlineMs: 200 }), ServiceUnavailable);
+    assert.ok(Date.now() - quick < 1500);
   } finally {
     await pricing.close();
   }
