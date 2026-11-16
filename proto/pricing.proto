@@ -1,5 +1,7 @@
-// pricing-service: fair price (Strategy pattern) against market reference prices.
-// Owns the table market_price. It is the ONLY service that talks to a third-party API, and it does it over REST.
+// pricing-service: fair price (Strategy pattern) against market reference prices, and the AI listing
+// assistant (recognizes the product in a photo and suggests the listing with its fair price).
+// Owns the table market_price. It is the ONLY service that talks to third-party APIs (market prices,
+// Gemini, Groq), and it always does it over REST.
 syntax = "proto3";
 
 package delcampo.pricing;
@@ -9,6 +11,26 @@ service PricingService {
   rpc GetReference(ProductRequest) returns (PriceReference);
   // Batch evaluation (one call for a whole catalog instead of one per product).
   rpc EvaluatePrices(EvaluateRequest) returns (EvaluateReply);
+  // AI assistant: from the photo of a product, a suggested listing (name, category, unit, description)
+  // plus its fair price. The producer reviews it; nothing is published automatically.
+  rpc SuggestListing(ListingPhoto) returns (ListingSuggestion);
+}
+
+message ListingPhoto {
+  bytes content = 1;               // already compressed by the client (max. 600 KB)
+  string content_type = 2;         // image/webp | image/jpeg | image/png
+}
+
+message ListingSuggestion {
+  bool recognized = 1;             // false: the photo does not show a farm product
+  string product = 2;
+  string category = 3;             // tubers | vegetables | fruits | grains | herbs | dairy | other
+  string unit = 4;                 // kg | libra | unidad | docena | bulto | canastilla | atado
+  string description = 5;
+  double confidence = 6;           // 0..1
+  string photo_tip = 7;            // advice to improve the photo; empty if it is fine
+  PriceReference reference = 8;    // fair price of the product; not set if there is no reference
+  string provider = 9;             // AI that answered (gemini | groq)
 }
 
 message ProductRequest {
