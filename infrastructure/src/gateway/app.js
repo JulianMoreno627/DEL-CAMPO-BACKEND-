@@ -1,6 +1,6 @@
 import express from 'express';
 import compression from 'compression';
-import { serverTiming, cors, requestContext, errorHandler } from './middlewares.js';
+import { serverTiming, cors, requestContext, asyncHandler, errorHandler } from './middlewares.js';
 import { apiRoutes, pageRoutes } from './routes.js';
 import { AuthController } from './controllers/AuthController.js';
 import { ListingController } from './controllers/ListingController.js';
@@ -9,6 +9,7 @@ import { OrderController } from './controllers/OrderController.js';
 import { CatalogController } from './controllers/CatalogController.js';
 import { HarvestController } from './controllers/HarvestController.js';
 import { SystemController } from './controllers/SystemController.js';
+import { PhotoController } from './controllers/PhotoController.js';
 
 /**
  * API Gateway: the only HTTP entry point (public PORT). Frontend → gateway is REST;
@@ -22,11 +23,10 @@ import { SystemController } from './controllers/SystemController.js';
  * @param {() => Promise<object>} deps.healthProbe
  * @param {string} deps.frontendUrl
  * @param {string[]} deps.allowedOrigins
- * @param {string} deps.uploadsDir photos written by catalog-service
  * @param {string} deps.publicDir static files (SSG page /temporada/)
  */
 export function createGateway({
-  clients, sessionToken, isrCache, metricsService, healthProbe, frontendUrl, allowedOrigins, uploadsDir, publicDir,
+  clients, sessionToken, isrCache, metricsService, healthProbe, frontendUrl, allowedOrigins, publicDir,
 }) {
   const app = express();
   app.disable('x-powered-by');
@@ -37,8 +37,9 @@ export function createGateway({
   app.use(requestContext(sessionToken));
   app.use(express.json({ limit: '256kb' }));
 
-  // Static files: uploaded photos and SSG pages (generated at build time)
-  app.use('/uploads', express.static(uploadsDir, { maxAge: '1h' }));
+  // Listing photos: they live in Neon and catalog-service returns them over gRPC (GetPhoto)
+  app.get('/uploads/:file', asyncHandler(new PhotoController(clients).get));
+  // Static files: SSG pages (generated at build time)
   app.use(express.static(publicDir, { maxAge: '1h' }));
 
   const controllers = {

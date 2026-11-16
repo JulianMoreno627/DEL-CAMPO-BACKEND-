@@ -66,6 +66,18 @@ test('PostgreSQL: the whole flow writes and reads each service\'s own tables', {
   assert.equal(session.user.id, b);
 });
 
+test('PostgreSQL: photos are stored in the table photo and deleted when no longer used', { skip }, async () => {
+  const { container } = services.catalog;
+  const storage = container.harvestService.photoStorage;
+  const url = await storage.save({ content: Buffer.from(`foto ${run}`), contentType: 'image/webp' });
+  const fileName = url.replace('/uploads/', '');
+  const stored = await services.catalog.client.call('GetPhoto', { fileName });
+  assert.equal(stored.contentType, 'image/webp');
+  assert.equal(Buffer.from(stored.content).toString(), `foto ${run}`);
+  await storage.delete(url);
+  await assert.rejects(services.catalog.client.call('GetPhoto', { fileName }), (error) => error.status === 404);
+});
+
 test('PostgreSQL: optimistic concurrency detects a stale write (version)', { skip }, async () => {
   const { catalog } = services;
   const { container } = catalog;

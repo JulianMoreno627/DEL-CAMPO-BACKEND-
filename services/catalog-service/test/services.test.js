@@ -117,6 +117,29 @@ test('photos: invalid images are rejected first, the owner is checked before wri
   }
 });
 
+test('photos: replacing a photo deletes the old one, deleting the listing deletes its photo', async () => {
+  const photosDir = await mkdtemp(path.join(tmpdir(), 'delcampo-photos-'));
+  try {
+    const c = await createTestContainer({ photosDir });
+    const listing = await c.listingService.publish('p-rosa', { product: 'Haba', price: 3000, quantity: 20 });
+    const first = await c.listingService.uploadPhoto(listing.id, 'p-rosa', { content: Buffer.from('one'), contentType: 'image/webp' });
+    const second = await c.listingService.uploadPhoto(listing.id, 'p-rosa', { content: Buffer.from('two'), contentType: 'image/jpeg' });
+    assert.notEqual(first.photo, second.photo);
+    assert.deepEqual(await readdir(photosDir), [second.photo.replace('/uploads/', '')]); // the old one is gone
+
+    const stored = await c.harvestService.getPhoto(second.photo.replace('/uploads/', ''));
+    assert.equal(stored.contentType, 'image/jpeg');
+    assert.equal(stored.content.toString(), 'two');
+    await assert.rejects(c.harvestService.getPhoto('../../etc/passwd'), (error) => error.status === 404);
+    await assert.rejects(c.harvestService.getPhoto(first.photo.replace('/uploads/', '')), /Foto no encontrado/);
+
+    await c.listingService.remove(listing.id, 'p-rosa');
+    assert.deepEqual(await readdir(photosDir), []);
+  } finally {
+    await rm(photosDir, { recursive: true, force: true });
+  }
+});
+
 test('no default products: the store starts empty and only shows what producers publish', async () => {
   const c = await createTestContainer({ withDemoData: false });
   assert.deepEqual(await c.listingService.list(), []);

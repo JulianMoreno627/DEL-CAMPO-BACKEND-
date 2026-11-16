@@ -47,7 +47,6 @@ const app = createGateway({
   metricsService: new MetricsService(),
   frontendUrl: config.frontendUrl,
   allowedOrigins: config.allowedOrigins,
-  uploadsDir: config.uploadsDir,
   publicDir: config.publicDir,
   healthProbe: async () => ({
     services: await supervisor.health(),

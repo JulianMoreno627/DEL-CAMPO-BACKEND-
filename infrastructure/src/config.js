@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { databaseUrl, uploadsDir } from '@del-campo/shared';
+import { databaseUrl } from '@del-campo/shared';
 
 /** Public folder of the gateway (the SSG page /temporada/ is generated here at build time). */
 export const PUBLIC_DIR = fileURLToPath(new URL('../public/', import.meta.url));
@@ -28,7 +28,6 @@ export function loadConfig(env = process.env, log = console) {
     allowedOrigins,
     tokenSecret,
     databaseUrl: databaseUrl(),
-    uploadsDir: uploadsDir(),
     publicDir: PUBLIC_DIR,
     isrRevalidateSeconds: Number(env.ISR_REVALIDATE_SECONDS ?? 60),
     // Node flags of each microservice: 6 processes + the gateway must fit in the 512 MB of Render Free.

@@ -32,6 +32,7 @@ export function registerCatalogGrpcApi(server, controller) {
     updateHarvest: unary(({ id, changes, timestamp }) =>
       controller.updateHarvest(id, actor(), changesFromMessage(changes), timestamp)),
     uploadHarvestPhoto: unary((message) => controller.uploadHarvestPhoto(message.id, actor(), photoFromMessage(message))),
+    getPhoto: unary(({ fileName }) => controller.getPhoto(fileName)),
 
     // ---- Read queries
     getCatalog: unary(async (message) => ({ items: await controller.getCatalog(catalogFilterFromMessage(message)) })),

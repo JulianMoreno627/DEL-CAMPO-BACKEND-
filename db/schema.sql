@@ -6,7 +6,7 @@
 --
 -- Every table has ONE owner service; no other service reads or writes it (they use gRPC):
 --   user-service        app_user, credential
---   catalog-service     harvest, sync_operation
+--   catalog-service     harvest, sync_operation, photo
 --   cart-service        cart
 --   order-service       purchase_order
 --   reputation-service  rating
@@ -105,6 +105,17 @@ CREATE TABLE IF NOT EXISTS rating (
   UNIQUE (order_id, from_user_id)
 );
 CREATE INDEX IF NOT EXISTS rating_to_user_ix ON rating (to_user_id);
+
+-- Owner: catalog-service. Listing photos (already compressed by the client: WebP ~800 px, max. 600 KB).
+-- They live in the database because the disk of Render Free is erased on every restart.
+-- id is the public file name (<uuid>.<ext>), served by the gateway at /uploads/<id>.
+CREATE TABLE IF NOT EXISTS photo (
+  id            TEXT PRIMARY KEY,
+  content_type  TEXT NOT NULL CHECK (content_type IN ('image/webp', 'image/jpeg', 'image/png')),
+  data          BYTEA NOT NULL,
+  size          INT NOT NULL CHECK (size > 0 AND size <= 614400),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 -- Owner: catalog-service. Idempotency of the offline synchronization
 CREATE TABLE IF NOT EXISTS sync_operation (

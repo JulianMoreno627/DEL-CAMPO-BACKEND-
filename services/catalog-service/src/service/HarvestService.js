@@ -12,11 +12,17 @@ export class HarvestService {
    * @param {PhotoStorage} deps.photoStorage
    * @param {EventBus} deps.bus
    */
-  constructor({ harvestRepo, userClient, photoStorage, bus }) {
+  constructor({ harvestRepo, userClient, photoStorage, bus, log = console }) {
     this.harvestRepo = harvestRepo;
     this.userClient = userClient;
     this.photoStorage = photoStorage;
     this.bus = bus;
+    this.log = log;
+  }
+
+  /** @returns {Promise<{content: Buffer, contentType: string}>} a stored photo (NotFound if it does not exist) */
+  getPhoto(fileName) {
+    return this.photoStorage.get(fileName);
   }
 
   async create(data) {
@@ -48,13 +54,30 @@ export class HarvestService {
     return { harvest, ...result };
   }
 
-  /** Saves the photo and links it. The owner is checked BEFORE writing the file (no orphan photos). */
+  /**
+   * Saves the photo and links it. The owner is checked BEFORE storing the photo, and the previous
+   * photo is deleted after linking the new one: no orphan photos filling the free storage.
+   */
   async uploadPhoto(id, producerId, photo) {
     PhotoStorage.validate(photo);
     const harvest = await this.harvestRepo.getOrFail(id);
     if (harvest.producerId !== producerId) throw new DomainError('No es el dueño de esta cosecha', 403);
     const url = await this.photoStorage.save(photo);
-    return (await this.update(id, { photo: url }, { producerId })).harvest;
+    let updated;
+    try {
+      updated = (await this.update(id, { photo: url }, { producerId })).harvest;
+    } catch (error) {
+      await this.discardPhoto(url); // the new photo could not be linked
+      throw error;
+    }
+    if (harvest.photo !== url) await this.discardPhoto(harvest.photo);
+    return updated;
+  }
+
+  /** Deletes a photo that is no longer used. A failure here must not break the operation that caused it. */
+  async discardPhoto(url) {
+    await this.photoStorage.delete(url).catch((error) =>
+      this.log.warn?.(`[catalog] could not delete the photo ${url}: ${error.message}`));
   }
 
   /**

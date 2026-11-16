@@ -85,6 +85,7 @@ export class ListingService {
       throw new DomainError('Este anuncio ya tiene pedidos y no se puede eliminar', 409);
     }
     await this.harvestRepo.delete(id);
+    await this.harvestService.discardPhoto(harvest.photo);
     this.bus.emit(EventBus.HARVEST_CHANGED, harvest);
   }
 }
