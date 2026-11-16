@@ -33,10 +33,12 @@ export class GrpcClient {
   /**
    * @param {string} method RPC name as in the .proto (e.g. 'GetUser')
    * @param {object} [request]
+   * @param {object} [options]
+   * @param {number} [options.deadlineMs] longer deadline for one slow call (e.g. the AI assistant)
    */
-  call(method, request = {}) {
+  call(method, request = {}, { deadlineMs = this.deadlineMs } = {}) {
     const context = currentContext();
-    const deadline = Math.min(Date.now() + this.deadlineMs, context.deadline ?? Infinity);
+    const deadline = Math.min(Date.now() + deadlineMs, context.deadline ?? Infinity);
     const start = performance.now();
     return new Promise((resolve, reject) => {
       this.stub[method](request, metadataFrom(context), { deadline }, (error, response) => {
