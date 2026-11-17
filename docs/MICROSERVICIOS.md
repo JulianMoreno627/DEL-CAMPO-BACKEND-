@@ -56,7 +56,7 @@ Total con los flags por defecto: 6 × ~58 MB + el gateway (~80 MB), unos **430 M
 
   | Servicio | Tablas |
   |---|---|
-  | user-service | `app_user`, `credential` |
+  | user-service | `app_user`, `credential`, `user_avatar` |
   | catalog-service | `harvest`, `sync_operation`, `photo` |
   | cart-service | `cart` |
   | order-service | `purchase_order` |
