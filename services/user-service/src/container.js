@@ -1,4 +1,6 @@
-import { SessionToken, createPool, waitForDatabase } from '@del-campo/shared';
+import path from 'node:path';
+import { SessionToken, createPool, waitForDatabase, uploadsDir } from '@del-campo/shared';
+import { PostgresAvatarStorage, DiskAvatarStorage } from './repository/AvatarStorage.js';
 import { createUser } from './model/User.js';
 import { InMemoryUserRepository, PostgresUserRepository } from './repository/UserRepository.js';
 import { InMemoryCredentialRepository, PostgresCredentialRepository } from './repository/CredentialRepository.js';
@@ -16,8 +18,11 @@ import { demoUsers, DEMO_PASSWORD } from './seed.js';
  * @param {string|null} [options.databaseUrl] Neon (pooled); without it, in-memory repositories
  * @param {boolean} [options.withSeed] creates the demo accounts if there are no users
  * @param {object} [options.repositories] { userRepo, credentialRepo } already created (tests: simulates a restart over the same storage)
+ * @param {string} [options.avatarsDir] folder of the profile photos when there is no database
  */
-export async function createContainer({ tokenSecret, databaseUrl = null, withSeed = true, repositories = {} }) {
+export async function createContainer({
+  tokenSecret, databaseUrl = null, withSeed = true, repositories = {}, avatarsDir = path.join(uploadsDir(), 'avatars'),
+}) {
   const pool = databaseUrl ? createPool(databaseUrl) : null;
   if (pool) await waitForDatabase(pool);
 
@@ -25,7 +30,9 @@ export async function createContainer({ tokenSecret, databaseUrl = null, withSee
   const credentialRepo = repositories.credentialRepo ?? (pool ? new PostgresCredentialRepository({ pool }) : new InMemoryCredentialRepository());
 
   const authService = new AuthService({ userRepo, credentialRepo, sessionToken: new SessionToken(tokenSecret) });
-  const userService = new UserService({ userRepo });
+  // With a database the profile photos live in Neon (the disk of Render Free is erased on every restart)
+  const avatarStorage = pool ? new PostgresAvatarStorage({ pool }) : new DiskAvatarStorage({ directory: avatarsDir });
+  const userService = new UserService({ userRepo, avatarStorage });
   const controller = new UserController({ authService, userService });
 
   if (withSeed && (await userRepo.list()).length === 0) {
@@ -35,5 +42,5 @@ export async function createContainer({ tokenSecret, databaseUrl = null, withSee
     }
   }
 
-  return { userRepo, credentialRepo, authService, userService, controller, close: async () => pool?.end() };
+  return { userRepo, credentialRepo, avatarStorage, authService, userService, controller, close: async () => pool?.end() };
 }
