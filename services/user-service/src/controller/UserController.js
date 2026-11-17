@@ -33,4 +33,17 @@ export class UserController {
   async nearbyProducers(dto) {
     return (await this.userService.nearbyProducers(dto)).map(toNearbyProducerDto);
   }
+
+  async updateProfile(userId, changes) {
+    return toUserDto(await this.userService.updateProfile(userId, changes));
+  }
+
+  async uploadAvatar(userId, photo) {
+    return toUserDto(await this.userService.uploadAvatar(userId, photo));
+  }
+
+  async getAvatar(fileName) {
+    const { content, contentType } = await this.userService.getAvatar(fileName);
+    return { content, contentType };
+  }
 }

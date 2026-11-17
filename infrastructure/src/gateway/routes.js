@@ -25,6 +25,10 @@ export function apiRoutes(c) {
 
   r.get('/users/:id/reputation', h(c.order.reputationOf));
 
+  // ---- Profile of the session user: data and photo (user-service)
+  r.patch('/users/me', requireUser, h(c.profile.update));
+  r.post('/users/me/avatar', requireUser, rawPhoto, h(c.profile.uploadAvatar));
+
   // ---- Seasonal catalog and proximity (catalog, user, pricing)
   r.get('/catalog', h(c.catalog.catalogItems));
   r.get('/season', h(c.catalog.season));

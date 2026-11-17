@@ -17,3 +17,29 @@ test('Haversine distance Bogotá–Tunja ≈ 115 km', () => {
   assert.ok(d > 110 && d < 125, `distance ${d}`);
   assert.throws(() => new Coordinate(100, 0), DomainError);
 });
+
+test('profile: each user edits its own fields; everything is validated before changing anything', () => {
+  const producer = new Producer({ name: 'Rosa', farm: 'La Esperanza', village: 'El Rosal' });
+  assert.deepEqual(producer.updateProfile({ name: ' Rosa Pérez ', town: 'Ventaquemada', role: 'BUYER', crops: ['x'] }), ['name', 'town']);
+  assert.equal(producer.name, 'Rosa Pérez');
+  assert.equal(producer.role, 'PRODUCER'); // not editable
+  assert.equal(producer.version, 2);
+
+  assert.throws(() => producer.updateProfile({ name: 'Otra', phone: 'llámeme' }), /Teléfono inválido/);
+  assert.equal(producer.name, 'Rosa Pérez'); // nothing changed (all or nothing)
+  assert.throws(() => producer.updateProfile({ farm: '  ' }), /finca es obligatorio/);
+  assert.deepEqual(producer.updateProfile({ name: 'Rosa Pérez' }), []); // same value: no new version
+  assert.equal(producer.version, 2);
+
+  const buyer = new Buyer({ name: 'Ana' });
+  assert.deepEqual(buyer.updateProfile({ type: 'RESTAURANT', farm: 'No aplica' }), ['type']);
+  assert.throws(() => buyer.updateProfile({ type: 'BANK' }), /Tipo de comprador inválido/);
+});
+
+test('profile photo: changing it returns the previous one (to delete it)', () => {
+  const buyer = new Buyer({ name: 'Ana' });
+  assert.equal(buyer.toJSON().avatar, null);
+  assert.equal(buyer.changeAvatar('/avatars/a.webp'), null);
+  assert.equal(buyer.changeAvatar('/avatars/b.webp'), '/avatars/a.webp');
+  assert.equal(buyer.toJSON().avatar, '/avatars/b.webp');
+});

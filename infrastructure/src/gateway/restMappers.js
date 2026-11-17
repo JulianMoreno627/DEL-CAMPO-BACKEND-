@@ -17,6 +17,7 @@ export function userJson(u) {
     name: u.name,
     phone: u.phone,
     location: coordinate(u.location),
+    avatar: u.avatar ?? null,
   };
   if (u.role === 'PRODUCER') return { ...base, farm: u.farm, village: u.village, town: u.town, crops: [...u.crops] };
   return { ...base, type: u.type };

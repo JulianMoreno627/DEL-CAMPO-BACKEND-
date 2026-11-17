@@ -44,6 +44,7 @@ export class PostgresUserRepository extends PostgresRepository {
       town: row.town,
       crops: row.crops ?? [],
       type: row.buyer_type,
+      avatar: row.avatar ?? null,
       location: row.lat != null && row.lng != null ? new Coordinate(row.lat, row.lng) : null,
     });
   }
@@ -51,12 +52,12 @@ export class PostgresUserRepository extends PostgresRepository {
   toRow(entity) {
     const user = entity.toJSON();
     return {
-      columns: ['id', 'role', 'name', 'phone', 'lat', 'lng', 'farm', 'village', 'town', 'crops', 'buyer_type', 'version', 'updated_at'],
+      columns: ['id', 'role', 'name', 'phone', 'lat', 'lng', 'farm', 'village', 'town', 'crops', 'buyer_type', 'avatar', 'version', 'updated_at'],
       values: [
         user.id, user.role, user.name, user.phone,
         user.location?.lat ?? null, user.location?.lng ?? null,
         user.farm ?? null, user.village ?? null, user.town ?? null, user.crops ?? [],
-        user.type ?? null, user.version, user.updatedAt,
+        user.type ?? null, user.avatar ?? null, user.version, user.updatedAt,
       ],
     };
   }

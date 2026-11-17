@@ -1,5 +1,8 @@
-import { unary } from '@del-campo/shared';
-import { registerFromMessage, loginFromMessage, nearbyFromMessage } from './dto/userDto.js';
+import { unary, currentContext } from '@del-campo/shared';
+import { registerFromMessage, loginFromMessage, nearbyFromMessage, profileFromMessage, avatarFromMessage } from './dto/userDto.js';
+
+/** The acting user, propagated by the gateway in the metadata (x-user-id). */
+const actor = () => currentContext().userId;
 
 /**
  * gRPC API of user-service: the ONLY file of the service that knows gRPC.
@@ -17,5 +20,8 @@ export function registerUserGrpcApi(server, controller) {
     getUsersByIds: unary(async ({ ids }) => ({ users: await controller.getUsersByIds(ids) })),
     listProducers: unary(async () => ({ users: await controller.listProducers() })),
     nearbyProducers: unary(async (message) => ({ producers: await controller.nearbyProducers(nearbyFromMessage(message)) })),
+    updateProfile: unary((message) => controller.updateProfile(actor(), profileFromMessage(message))),
+    uploadAvatar: unary((message) => controller.uploadAvatar(actor(), avatarFromMessage(message))),
+    getAvatar: unary(({ fileName }) => controller.getAvatar(fileName)),
   });
 }

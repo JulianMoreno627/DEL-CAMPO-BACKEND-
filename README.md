@@ -48,7 +48,7 @@ En Render Free los servicios gratis no pueden recibir tráfico privado y el prox
 
 | Servicio | Responsabilidad | Puerto gRPC | Tablas propias | RPCs principales |
 |---|---|---|---|---|
-| **user-service** | Registro, login (token HMAC, scrypt), perfiles Producer/Buyer, cercanía | 50051 | `app_user`, `credential` | `Register`, `Login`, `GetUser`, `GetUsersByIds`, `ListProducers`, `NearbyProducers` |
+| **user-service** | Registro, login (token HMAC, scrypt), perfiles Producer/Buyer (datos y foto), cercanía | 50051 | `app_user`, `credential`, `user_avatar` | `Register`, `Login`, `GetUser`, `GetUsersByIds`, `ListProducers`, `NearbyProducers`, `UpdateProfile`, `UploadAvatar`, `GetAvatar` |
 | **catalog-service** | Cosechas y anuncios (máquina de estados, reservas), catálogo por temporada y cercanía, fotos, sincronización offline | 50052 | `harvest`, `sync_operation`, `photo` | `ListListings`, `PublishListing`, `EditListing`, `DeleteListing`, `UploadListingPhoto`, `GetPhoto`, `CreateHarvest`, `UpdateHarvest`, `GetCatalog`, `GetSeason`, `GetProducerProfile`, `GetHarvestsByIds`, `ReserveHarvest`, `ReleaseHarvest`, `ApplySyncBatch`, `WatchHarvestChanges` (stream) |
 | **cart-service** | Carrito del comprador | 50053 | `cart` | `GetCart`, `AddItem`, `ChangeItemQuantity`, `RemoveItem`, `ClearCart`, `GetCartItems`, `EmptyCart` |
 | **order-service** | Pedidos con precio congelado, ciclo de vida y **saga del checkout** con compensación | 50054 | `purchase_order` | `CheckoutCart`, `CreateOrder`, `ListOrders`, `ChangeOrderStatus`, `GetOrder`, `HasOrdersForHarvest` |
@@ -128,7 +128,10 @@ La sesión es un token firmado (HMAC-SHA256) que el cliente envía en `Authoriza
 | GET | `/api/health` | infrastructure | Estado gRPC de cada servicio, de la base y memoria por proceso |
 | POST | `/api/auth/register` | user | Crear cuenta: `{ role: 'PRODUCER'\|'BUYER', name, email, password }` → `{ token, user }` |
 | POST | `/api/auth/login` | user | `{ email, password, role }` → `{ token, user }` (rechaza si el perfil no es el de la cuenta) |
-| GET | `/api/auth/me` | user | Usuario de la sesión actual |
+| GET | `/api/auth/me` | user | Usuario de la sesión actual (incluye `avatar`, la URL de su foto de perfil) |
+| PATCH | `/api/users/me` | user | Editar el perfil propio: `{ name, phone }`, y además `{ farm, village, town }` (productor) o `{ type }` (comprador) |
+| POST | `/api/users/me/avatar` | user | Foto de perfil (binaria, máx. 600 KB); reemplaza y borra la anterior |
+| GET | `/avatars/<archivo>` | user | Foto de perfil guardada en Neon, con caché de un año |
 | GET | `/api/listings?q=` | catalog | Anuncios a la venta |
 | GET | `/api/listings/mine` | catalog | Anuncios del productor, con lo vendido |
 | POST/PATCH/DELETE | `/api/listings`, `/api/listings/:id` | catalog (+ order al borrar) | Publicar, editar o eliminar un anuncio sin pedidos |

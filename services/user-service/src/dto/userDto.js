@@ -21,6 +21,7 @@ export function toUserDto(user) {
     crops: data.crops ?? [],
     type: data.type,
     ratingCriteria: user.ratingCriteria(),
+    avatar: data.avatar ?? undefined,
   };
 }
 
@@ -38,5 +39,11 @@ export function loginFromMessage({ email, password, role }) {
 export function nearbyFromMessage({ lat, lng, radiusKm }) {
   return { lat, lng, radiusKm };
 }
+
+export function profileFromMessage({ name, phone, farm, village, town, type }) {
+  return { name, phone, farm, village, town, type };
+}
+
+export const avatarFromMessage = ({ content, contentType }) => ({ content, contentType });
 
 export const toNearbyProducerDto = ({ producer, distanceKm }) => ({ producer: toUserDto(producer), distanceKm });
