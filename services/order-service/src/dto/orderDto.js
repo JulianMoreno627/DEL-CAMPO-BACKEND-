@@ -17,8 +17,8 @@ export function toOrderDto(order) {
   };
 }
 
-export const toOrderDetailDto = ({ order, product, unit, availableOn, producerName, buyerName }) =>
-  ({ order: toOrderDto(order), product, unit, availableOn, producerName, buyerName });
+export const toOrderDetailDto = ({ order, product, unit, availableOn, producerName, buyerName, photo }) =>
+  ({ order: toOrderDto(order), product, unit, availableOn, producerName, buyerName, photo });
 
 export const toCheckoutDto = ({ orders, total }) => ({ orders: orders.map(toOrderDto), total });
 

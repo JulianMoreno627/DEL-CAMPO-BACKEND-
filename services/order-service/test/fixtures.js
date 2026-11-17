@@ -9,7 +9,7 @@ export class FakeCatalogClient {
   constructor() {
     this.harvests = new Map([
       ['cos-2', { id: 'cos-2', producerId: 'p-rosa', product: 'Arveja', unit: 'kg', availableOn: '2026-11-09', unitPrice: 4200, estimated: 300, reserved: 0 }],
-      ['cos-3', { id: 'cos-3', producerId: 'p-jose', product: 'Lechuga', unit: 'unidad', availableOn: '2026-11-07', unitPrice: 1300, estimated: 500, reserved: 0 }],
+      ['cos-3', { id: 'cos-3', producerId: 'p-jose', product: 'Lechuga', photo: '/uploads/lechuga.webp', unit: 'unidad', availableOn: '2026-11-07', unitPrice: 1300, estimated: 500, reserved: 0 }],
       ['cos-6', { id: 'cos-6', producerId: 'p-carmen', product: 'Tomate de árbol', unit: 'kg', availableOn: '2026-11-10', unitPrice: 3300, estimated: 350, reserved: 0 }],
     ]);
     this.failReleases = 0; // how many releases fail before working (catalog down)

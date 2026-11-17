@@ -61,6 +61,7 @@ message OrderDetail {
   optional string available_on = 4;
   optional string producer_name = 5;
   optional string buyer_name = 6;
+  optional string photo = 7;       // photo of the product (/uploads/<file>); not set if it has none
 }
 
 message OrderDetailList {

@@ -45,5 +45,7 @@ test('orders are listed with product and names, newest first', async () => {
   assert.equal(lettuce.producerName, 'José Rincón');
   assert.equal(lettuce.buyerName, 'Ana Torres');
   assert.equal(lettuce.unit, 'unidad');
+  assert.equal(lettuce.photo, '/uploads/lechuga.webp'); // photo of the product, to show it in the order
+  assert.equal(list.find((d) => d.product === 'Arveja').photo, undefined);
   assert.equal((await c.orderService.list({ producerId: 'p-rosa' })).length, 1);
 });
