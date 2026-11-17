@@ -1,5 +1,5 @@
 // user-service: accounts (sign-up, login, session token) and user profiles.
-// Owns the tables app_user and credential.
+// Owns the tables app_user, credential and user_avatar.
 syntax = "proto3";
 
 package delcampo.user;
@@ -16,6 +16,39 @@ service UserService {
   rpc GetUsersByIds(delcampo.common.Ids) returns (UserList);
   rpc ListProducers(delcampo.common.Empty) returns (UserList);
   rpc NearbyProducers(NearbyRequest) returns (NearbyProducerList);
+
+  // ---- Profile of the acting user (x-user-id of the metadata)
+  // Only the fields that are set change; each profile edits its own fields.
+  rpc UpdateProfile(ProfileChanges) returns (User);
+  // Replaces the profile photo (the previous one is deleted).
+  rpc UploadAvatar(AvatarUpload) returns (User);
+  // A stored profile photo (the gateway serves it at /avatars/<file_name>). NOT_FOUND if it does not exist.
+  rpc GetAvatar(AvatarRef) returns (AvatarContent);
+}
+
+message ProfileChanges {
+  optional string name = 1;
+  optional string phone = 2;
+  // Producer only
+  optional string farm = 3;
+  optional string village = 4;
+  optional string town = 5;
+  // Buyer only: CONSUMER | STORE | RESTAURANT
+  optional string type = 6;
+}
+
+message AvatarUpload {
+  bytes content = 1;              // already compressed by the client (max. 600 KB)
+  string content_type = 2;        // image/webp | image/jpeg | image/png
+}
+
+message AvatarRef {
+  string file_name = 1;           // <uuid>.<ext>
+}
+
+message AvatarContent {
+  bytes content = 1;
+  string content_type = 2;
 }
 
 message User {
@@ -35,6 +68,8 @@ message User {
   optional string type = 12;
   // Criteria (1-5) other users rate this user with (polymorphism of Producer / Buyer)
   repeated string rating_criteria = 13;
+  // Public URL of the profile photo (/avatars/<file>); not set = no photo
+  optional string avatar = 14;
 }
 
 message UserId {
