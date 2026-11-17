@@ -103,6 +103,7 @@ test('HTTP: login per profile, producer listing and checkout from the cart', asy
 
   const { data: orders } = await call('GET', '/api/orders', { token: producer.token });
   assert.ok(orders.some((o) => o.buyerName === 'Pedro' && o.quantity === 4 && o.product === 'Haba'));
+  assert.equal(orders.find((o) => o.product === 'Haba').photo, null); // without a photo the field is null
   assert.equal((await call('GET', '/api/auth/me', { token: buyer.token })).data.name, 'Pedro');
 });
 
