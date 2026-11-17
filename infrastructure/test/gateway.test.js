@@ -27,6 +27,7 @@ let photosDir;
 before(async () => {
   photosDir = await mkdtemp(path.join(tmpdir(), 'delcampo-gateway-'));
   services = await startServices(['user', 'pricing', 'reputation', 'catalog', 'cart', 'order'], {
+    user: { avatarsDir: path.join(photosDir, 'avatars') },
     catalog: { harvests: demoHarvests(), photosDir },
     // AI provider double: the gateway test must not spend the free quota of Gemini / Groq
     pricing: { recognizers: [{
@@ -201,4 +202,29 @@ test('HTTP: AI assistant — only producers; photo → suggested listing with it
     confidence: 0.9, photoTip: '', provider: 'gemini',
     fairPrice: { product: 'papa criolla', marketPrice: 4000, unit: 'kg', min: 2400, max: 3400 },
   });
+});
+
+test('HTTP: profile — edit the data and the photo of the session user; the photo is served at /avatars', async () => {
+  assert.equal((await call('PATCH', '/api/users/me', { body: { name: 'X' } })).status, 401);
+  const { data: { token } } = await call('POST', '/api/auth/login', { body: { email: 'jose@delcampo.co', password: 'campo123' } });
+
+  const updated = await call('PATCH', '/api/users/me', { token, body: { village: 'La Florida', phone: '311 222 3344', role: 'BUYER' } });
+  assert.equal(updated.status, 200);
+  assert.equal(updated.data.village, 'La Florida');
+  assert.equal(updated.data.role, 'PRODUCER'); // the role cannot be edited
+  assert.equal(updated.data.avatar, null);
+  assert.equal((await call('PATCH', '/api/users/me', { token, body: { name: '' } })).status, 400);
+
+  const image = Buffer.from('RIFF0000WEBPVP8 avatar');
+  const uploaded = await fetch(`${base}/api/users/me/avatar`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'image/webp' }, body: image });
+  assert.equal(uploaded.status, 201);
+  const { avatar } = await uploaded.json();
+  assert.match(avatar, /^\/avatars\/[\w-]+\.webp$/);
+
+  const served = await fetch(base + avatar);
+  assert.equal(served.status, 200);
+  assert.match(served.headers.get('cache-control'), /immutable/);
+  assert.deepEqual(Buffer.from(await served.arrayBuffer()), image);
+  assert.equal((await call('GET', '/api/auth/me', { token })).data.avatar, avatar);
+  assert.equal((await fetch(`${base}/avatars/nope.webp`)).status, 404);
 });

@@ -14,9 +14,9 @@ const harvestMessage = {
 test('REST mappers: a producer and a buyer keep the fields of the old API (no internal fields)', () => {
   const base = { id: 'x', version: 1, updatedAt: 't', name: 'N', phone: '', location: null, crops: [], ratingCriteria: ['a'] };
   assert.deepEqual(Object.keys(userJson({ ...base, role: 'PRODUCER', farm: 'F', village: 'V', town: 'T' })),
-    ['id', 'version', 'updatedAt', 'role', 'name', 'phone', 'location', 'farm', 'village', 'town', 'crops']);
+    ['id', 'version', 'updatedAt', 'role', 'name', 'phone', 'location', 'avatar', 'farm', 'village', 'town', 'crops']);
   assert.deepEqual(userJson({ ...base, role: 'BUYER', type: 'STORE' }),
-    { id: 'x', version: 1, updatedAt: 't', role: 'BUYER', name: 'N', phone: '', location: null, type: 'STORE' });
+    { id: 'x', version: 1, updatedAt: 't', role: 'BUYER', name: 'N', phone: '', location: null, avatar: null, type: 'STORE' });
 });
 
 test('REST mappers: a harvest without photo or planting date has null (not missing) fields', () => {

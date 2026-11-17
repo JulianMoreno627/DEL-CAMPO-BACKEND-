@@ -11,6 +11,7 @@ import { HarvestController } from './controllers/HarvestController.js';
 import { SystemController } from './controllers/SystemController.js';
 import { PhotoController } from './controllers/PhotoController.js';
 import { AssistantController } from './controllers/AssistantController.js';
+import { ProfileController } from './controllers/ProfileController.js';
 
 /**
  * API Gateway: the only HTTP entry point (public PORT). Frontend → gateway is REST;
@@ -38,8 +39,11 @@ export function createGateway({
   app.use(requestContext(sessionToken));
   app.use(express.json({ limit: '256kb' }));
 
-  // Listing photos: they live in Neon and catalog-service returns them over gRPC (GetPhoto)
+  // Photos live in Neon: listing photos come from catalog-service (GetPhoto) and profile photos from
+  // user-service (GetAvatar), both over gRPC
+  const profile = new ProfileController(clients);
   app.get('/uploads/:file', asyncHandler(new PhotoController(clients).get));
+  app.get('/avatars/:file', asyncHandler(profile.avatar));
   // Static files: SSG pages (generated at build time)
   app.use(express.static(publicDir, { maxAge: '1h' }));
 
@@ -52,6 +56,7 @@ export function createGateway({
     harvest: new HarvestController(clients),
     system: new SystemController({ healthProbe, metricsService }),
     assistant: new AssistantController(clients),
+    profile,
   };
   app.use('/api', apiRoutes(controllers));
   app.use(pageRoutes({ catalog: clients.catalog, isrCache, frontendUrl }));
