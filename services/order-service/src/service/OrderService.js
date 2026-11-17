@@ -60,6 +60,7 @@ export class OrderService {
         product: harvests.get(order.harvestId)?.product,
         unit: harvests.get(order.harvestId)?.unit,
         availableOn: harvests.get(order.harvestId)?.availableOn,
+        photo: harvests.get(order.harvestId)?.photo,
         producerName: names.get(order.producerId),
         buyerName: names.get(order.buyerId),
       }));

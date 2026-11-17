@@ -143,8 +143,8 @@ export function orderJson(o) {
   };
 }
 
-export const orderDetailJson = ({ order, product, unit, availableOn, producerName, buyerName }) =>
-  ({ ...orderJson(order), product, unit, availableOn, producerName, buyerName });
+export const orderDetailJson = ({ order, product, unit, availableOn, producerName, buyerName, photo }) =>
+  ({ ...orderJson(order), product, unit, availableOn, producerName, buyerName, photo: photo ?? null });
 
 export const checkoutJson = ({ orders, total }) => ({ orders: orders.map(orderJson), total });
 
