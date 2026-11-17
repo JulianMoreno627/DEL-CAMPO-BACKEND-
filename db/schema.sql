@@ -5,7 +5,7 @@
 -- tables of different owners are created in the right order.
 --
 -- Every table has ONE owner service; no other service reads or writes it (they use gRPC):
---   user-service        app_user, credential
+--   user-service        app_user, credential, user_avatar
 --   catalog-service     harvest, sync_operation, photo
 --   cart-service        cart
 --   order-service       purchase_order
@@ -37,6 +37,18 @@ CREATE TABLE IF NOT EXISTS app_user (
   CHECK (role <> 'BUYER' OR buyer_type IS NOT NULL)
 );
 CREATE INDEX IF NOT EXISTS app_user_role_idx ON app_user (role);
+-- Profile photo: public URL /avatars/<uuid>.<ext>. ADD COLUMN IF NOT EXISTS also updates databases created before.
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS avatar TEXT;
+
+-- Owner: user-service. Profile photos (compressed by the client, max. 600 KB). In the database because
+-- the disk of Render Free is erased on every restart. id is the public file name (<uuid>.<ext>).
+CREATE TABLE IF NOT EXISTS user_avatar (
+  id            TEXT PRIMARY KEY,
+  content_type  TEXT NOT NULL CHECK (content_type IN ('image/webp', 'image/jpeg', 'image/png')),
+  data          BYTEA NOT NULL,
+  size          INT NOT NULL CHECK (size > 0 AND size <= 614400),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 -- Owner: user-service. Credentials apart from the profile: the hash never travels with the user data
 CREATE TABLE IF NOT EXISTS credential (
